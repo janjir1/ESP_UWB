@@ -10,6 +10,7 @@ set "destination_dir=%~dp0components"
 
 git clone %repo_url% %destination_dir%
 
-setx ESP_UWB_ROOT_DIR "%~dp0"
+setx ESP_UWB_ROOT_DIR %~dp0
+echo %ESP_UWB_ROOT_DIR%
 
 pause
