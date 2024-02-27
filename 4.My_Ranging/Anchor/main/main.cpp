@@ -1,3 +1,10 @@
+#include <stdio.h>
+#include <inttypes.h>
+#include "sdkconfig.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
 /**
  * 
  * @todo
@@ -48,15 +55,14 @@ void setup() {
   DW1000Ranging.attachBlinkDevice(newBlink);
   DW1000Ranging.attachInactiveDevice(inactiveDevice);
   //Enable the filter to smooth the distance
-  //DW1000Ranging.useRangeFilter(true);;
+  //DW1000Ranging.useRangeFilter(true);
   
   //we start the module as an anchor
-  DW1000Ranging.startAsAnchor("A1:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
+  DW1000Ranging.startAsAnchor("82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
 }
 
 void loop() {
   DW1000Ranging.loop();
-  delay(1);
 }
 
 

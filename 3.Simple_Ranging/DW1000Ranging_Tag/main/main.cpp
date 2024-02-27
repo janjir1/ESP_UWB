@@ -8,10 +8,16 @@
 #include <SPI.h>
 #include "DW1000Ranging.h"
 
+#define SPI_SCK 18
+#define SPI_MISO 19
+#define SPI_MOSI 23
+#define DW_CS 4
+
 // connection pins
-const uint8_t PIN_RST = 9; // reset pin
-const uint8_t PIN_IRQ = 2; // irq pin
-const uint8_t PIN_SS = SS; // spi select pin
+const uint8_t PIN_RST = 27; // reset pin
+const uint8_t PIN_IRQ = 34; // irq pin
+const uint8_t PIN_SS = 4;   // spi select pin
+
 
 void newRange() {
   Serial.print("from: "); Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
@@ -32,7 +38,12 @@ void inactiveDevice(DW1000Device* device) {
 
 
 void setup() {
+
   Serial.begin(115200);
+  delay(1000);
+  //init the configuration
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+
   delay(1000);
   //init the configuration
   DW1000Ranging.initCommunication(PIN_RST, PIN_SS, PIN_IRQ); //Reset, CS, IRQ pin
@@ -44,11 +55,12 @@ void setup() {
   //DW1000Ranging.useRangeFilter(true);
   
   //we start the module as a tag
-  DW1000Ranging.startAsTag("7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
+  DW1000Ranging.startAsTag("T1:69:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
 }
 
 void loop() {
   DW1000Ranging.loop();
+  delay(1);
 }
 
 
