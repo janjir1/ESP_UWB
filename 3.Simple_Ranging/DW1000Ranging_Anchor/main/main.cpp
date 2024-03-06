@@ -51,7 +51,7 @@ void setup() {
   //DW1000Ranging.useRangeFilter(true);;
   
   //we start the module as an anchor
-  DW1000Ranging.startAsAnchor("A1:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
+  DW1000Ranging.startAsAnchor("A5:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
 }
 
 void loop() {

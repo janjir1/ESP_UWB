@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 #Set project name
-set(proj "Simple_tag")
+set(proj "Simple_anchor")
 #Set project root path
 set(ROOT_DIR "d:\\Files\\Projects\\ESP_UWB")
 
