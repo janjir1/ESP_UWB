@@ -1,0 +1,24 @@
+Changes:
+DW1000.cpp:
+in getReciveTimestamp() removed correctTimestamp -line: 1816
+
+DW1000Ranging.cpp:
+added RXP and FPP for POLL, POLL_ACK, RANGE
+
+Loop - anchor - RANGE
+added RXP and FPP decode from data
+removed distance calculation
+
+transmit range:
+transmiting POLL_ACK RXP and FPP
+
+visualizeDatas
+More better
+
+antenna delay set to 0
+
+
+TODO:
+fix watchdog
+max number of devices?
+tighter timing?
