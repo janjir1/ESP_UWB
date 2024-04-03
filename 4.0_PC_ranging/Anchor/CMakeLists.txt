@@ -58,47 +58,7 @@ else()
     endif()
 endif()
 
-#-------------Adding sdkconfig------------------------------
 
-# Set the source and destination directories
-set(SOURCE_DIR "${ROOT_DIR}\\build_settitngs\\sdkconfig")
-set(DESTINATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-# Copy the contents of the source directory to the destination directory
-
-message(STATUS "Adding sdkconfig:")
-if(EXISTS ${DESTINATION_DIR}\\sdkconfig)
-    message(STATUS "File is already present")
-else()
-    file(COPY ${SOURCE_DIR} DESTINATION ${DESTINATION_DIR})
-    if(EXISTS ${DESTINATION_DIR}\\sdkconfig)
-        message(STATUS "File copied successfully to: ${DESTINATION_DIR}")
-    else()
-        message(FATAL_ERROR "Failed to copy the file.")
-    endif()
-endif()
-
-#-------------Adding main CMakeLists------------------------------
-
-# Set the source and destination directories
-set(SOURCE_DIR "${ROOT_DIR}\\build_settitngs\\main\\CMakeLists.txt")
-set(DESTINATION_DIR "${CMAKE_CURRENT_SOURCE_DIR}\\main\\")
-
-# Copy the contents of the source directory to the destination directory
-
-message(STATUS "Adding CMakelists:")
-if(EXISTS ${DESTINATION_DIR}\\CMakeLists.txt)
-    message(STATUS "File is already present")
-else()
-    file(COPY ${SOURCE_DIR} DESTINATION ${DESTINATION_DIR})
-    if(EXISTS ${DESTINATION_DIR}\\CMakeLists.txt)
-        message(STATUS "File copied successfully to: ${DESTINATION_DIR}")
-    else()
-        message(FATAL_ERROR "Failed to copy the file.")
-    endif()
-endif()
-
-# ------------------------------
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
 project(${proj})

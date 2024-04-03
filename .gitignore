@@ -1,9 +1,12 @@
-/*/*/*
-!/*/*/CMakeLists.txt
-/components/*/CMakeLists.txt
+/*/*/.vscode
+/*/*/build
+/*/*/managed_components
+/*/*/components/arduino
 
-!/*/*/main
-/*/*/main/CMakeLists.txt
+/*/*/dependencies.lock
+/*/*/sdkconfig.old
+
+
 
 
 

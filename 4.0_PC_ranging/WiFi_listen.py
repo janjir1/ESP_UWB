@@ -9,16 +9,16 @@ UDP_PORT = 3334
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
-decode_key_sub = {0: {"bytes" : 5, "content" : "send"},
+decode_key_tag = {0: {"bytes" : 5, "content" : "send"},
                   1: {"bytes" : 5, "content" : "recived"},
                   2: {"bytes" : 2, "content" : "RXPower"},
                   3: {"bytes" : 2, "content" : "FPPower"}}
 
 decode_key = {0: {"bytes" : 2, "content" : "name"},
               1: {"bytes" : 2, "content" : "num_message"},
-              2: {"content" : "POLL", "sub" : decode_key_sub},
-              3: {"content" : "POLL_ACK", "sub" : decode_key_sub},
-              4: {"content" : "RANGE", "sub" : decode_key_sub},}
+              2: {"content" : "POLL", "sub" : decode_key_tag},
+              3: {"content" : "POLL_ACK", "sub" : decode_key_tag},
+              4: {"content" : "RANGE", "sub" : decode_key_tag},}
 
 
 
@@ -67,12 +67,12 @@ while True:
         
         decode_position +=1
 
-        #--------- Decode time and power -------------
+        #--------- Decode Tag -------------
         for _ in range(3):
             decode_sub_position = 0
             data[decode_key[decode_position]["content"]] = dict()
 
-            for i in range(len(decode_key_sub)):
+            for i in range(len(decode_key_tag)):
                 message_byte = recived_data[byte_position : byte_position + decode_key[decode_position]["sub"][decode_sub_position]["bytes"]]
                 byte_position = byte_position + decode_key[decode_position]["sub"][decode_sub_position]["bytes"]
 
