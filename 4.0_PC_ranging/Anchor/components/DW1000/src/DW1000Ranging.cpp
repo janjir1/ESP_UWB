@@ -616,7 +616,7 @@ void DW1000RangingClass::loop() {
 							memcpy(&power, data+SHORT_MAC_LEN+21+i*RANGE_LEN, 2);
 							myDistantDevice->FPPPollAck = power;
 
-							printAnchorInfo();
+							//printAnchorInfo();
 							
 							/*
 							// (re-)compute range as two-way ranging is done
@@ -1080,6 +1080,7 @@ void DW1000RangingClass::printAnchorInfo(){
 			power = _networkAnchorDevices[i].getFPPPollAck();
 			Serial.print("FPPollAck: ");Serial.println(power);
 			_networkAnchorDevices[i].resetRefresh();
+			
 		}
                 
     }
@@ -1091,11 +1092,18 @@ void DW1000RangingClass::printAnchorInfo(){
 void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
 
 	uint8_t  _refreshedDevices = 0;
+
+	Serial.print("_networkAnchorNumber: ");
+	Serial.println(_networkAnchorNumber);
+
 	for(uint8_t i = 0; i < _networkAnchorNumber; i++) {
-		if (_networkAnchorDevices[i].getRefresh()){
+		if (_networkAnchorDevices[i].getRefresh() == true){
 			_refreshedDevices++;               
     	}
 	}
+
+	Serial.print("_refreshedDevices: ");
+	Serial.println(_refreshedDevices);
 
 	if (_refreshedDevices > 0){
 		byte AnchorData[1 + (11 * _refreshedDevices)];
@@ -1104,26 +1112,30 @@ void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
 		AnchorData[i] = _refreshedDevices;
 		i+=1;
 
-		for(uint8_t num = 0; num < _networkAnchorNumber; i++) {
-
-			if (_networkAnchorDevices[i].getRefresh()){
-				memcpy(AnchorData + i, _networkAnchorDevices[i].getByteShortAddress(), 2);
+		for(uint8_t num = 0; num < _networkAnchorNumber; num++) {
+			if (_networkAnchorDevices[num].getRefresh()){
+				Serial.print("Anchor name: ");Serial.println(_networkAnchorDevices[num].getByteShortAddress()[1], HEX);
+				memcpy(AnchorData + i, _networkAnchorDevices[num].getByteShortAddress(), 2);
 				i+=2;
-				_networkAnchorDevices[i].timePollAckReceived.getTimestamp(AnchorData+i);
+				_networkAnchorDevices[num].timePollAckReceived.getTimestamp(AnchorData+i);
 				i+=timestamp_LEN;
-				int16_t power = _networkAnchorDevices[i].getRXPPollAck();
+				int16_t power = _networkAnchorDevices[num].getRXPPollAck();
 				memcpy(AnchorData + i, &power, int_LEN);
 				i+=int_LEN;
-				power = _networkAnchorDevices[i].getFPPPollAck();
+				power = _networkAnchorDevices[num].getFPPPollAck();
 				memcpy(AnchorData + i, &power, int_LEN);
 				i+=int_LEN;
-				_networkAnchorDevices[i].resetRefresh();
-			}        
+				_networkAnchorDevices[num].resetRefresh();
+				
+			}  
+			      
     	}
-
+		Serial.print("AnchorDataSize: ");
+		Serial.println(i);
 		AnchorDataSize = i;
 	}
-	else {AnchorDataSize = 0;}	
+	else {AnchorDataSize = 0;}
+	//visualizeDatas(AnchorData, 56);	
 }
 
 void DW1000RangingClass::getTagInfo(byte *TagData){

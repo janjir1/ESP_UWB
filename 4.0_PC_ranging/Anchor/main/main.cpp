@@ -29,7 +29,7 @@ const int pcPort = 3334;  // Replace with the desired port number
 
 WiFiUDP udp;
 
-int data_LEN = 47;
+int data_LEN = 102;
 
 uint16_t message_num = 0;
 
@@ -46,7 +46,7 @@ byte *getData() {
   memcpy(data + i, &message_num, 2);
   i+=int_LEN;
 
-  byte TagData[43];
+  byte TagData[42];
   DW1000Ranging.getTagInfo(TagData);
   memcpy(data + i, TagData, 42);
   i+=43;
@@ -54,9 +54,10 @@ byte *getData() {
   byte AnchorData[56];
   int AnchorDataSize;
   DW1000Ranging.getAnchorInfo(AnchorData, AnchorDataSize);
+  
   memcpy(data + i, AnchorData, AnchorDataSize);
   data_LEN = 46+AnchorDataSize;
-
+  
   
 
   return data;
@@ -68,6 +69,8 @@ void sendUDPMessage() {
   udp.beginPacket(pcIpAddress, pcPort);
   byte send[data_LEN];
   memcpy(send, getData(), data_LEN);
+  Serial.println(data_LEN);
+  DW1000Ranging.visualizeDatas(send, data_LEN);
   udp.write(send, data_LEN);
   udp.endPacket();
   message_num++;
