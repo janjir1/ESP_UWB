@@ -49,13 +49,13 @@ byte *getData() {
   byte TagData[42];
   DW1000Ranging.getTagInfo(TagData);
   memcpy(data + i, TagData, 42);
-  i+=43;
+  i+=42;
 
   byte AnchorData[56];
   int AnchorDataSize;
   DW1000Ranging.getAnchorInfo(AnchorData, AnchorDataSize);
-  
-  memcpy(data + i, AnchorData, AnchorDataSize);
+
+  memcpy(data + i, AnchorData, 56);
   data_LEN = 46+AnchorDataSize;
   
   
@@ -70,7 +70,7 @@ void sendUDPMessage() {
   byte send[data_LEN];
   memcpy(send, getData(), data_LEN);
   Serial.println(data_LEN);
-  DW1000Ranging.visualizeDatas(send, data_LEN);
+  
   udp.write(send, data_LEN);
   udp.endPacket();
   message_num++;

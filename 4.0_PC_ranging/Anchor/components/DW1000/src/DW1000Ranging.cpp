@@ -1093,8 +1093,8 @@ void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
 
 	uint8_t  _refreshedDevices = 0;
 
-	Serial.print("_networkAnchorNumber: ");
-	Serial.println(_networkAnchorNumber);
+	//Serial.print("_networkAnchorNumber: ");Serial.println(_networkAnchorNumber);
+	
 
 	for(uint8_t i = 0; i < _networkAnchorNumber; i++) {
 		if (_networkAnchorDevices[i].getRefresh() == true){
@@ -1102,11 +1102,10 @@ void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
     	}
 	}
 
-	Serial.print("_refreshedDevices: ");
-	Serial.println(_refreshedDevices);
+	//Serial.print("_refreshedDevices: ");Serial.println(_refreshedDevices);
+	
 
 	if (_refreshedDevices > 0){
-		byte AnchorData[1 + (11 * _refreshedDevices)];
 		int i = 0;
 
 		AnchorData[i] = _refreshedDevices;
@@ -1114,7 +1113,7 @@ void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
 
 		for(uint8_t num = 0; num < _networkAnchorNumber; num++) {
 			if (_networkAnchorDevices[num].getRefresh()){
-				Serial.print("Anchor name: ");Serial.println(_networkAnchorDevices[num].getByteShortAddress()[1], HEX);
+				//Serial.print("Anchor name: ");Serial.println(_networkAnchorDevices[num].getByteShortAddress()[1], HEX);
 				memcpy(AnchorData + i, _networkAnchorDevices[num].getByteShortAddress(), 2);
 				i+=2;
 				_networkAnchorDevices[num].timePollAckReceived.getTimestamp(AnchorData+i);
