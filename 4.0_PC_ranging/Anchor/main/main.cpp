@@ -30,15 +30,14 @@ const int pcPort = 3334;  // Replace with the desired port number
 WiFiUDP udp;
 
 int data_LEN = 102;
+static byte data[102];
 
 uint16_t message_num = 0;
 
 
-byte *getData() {
+void getData() {
 
-  int i = 0;
-  static byte data[102];
-  
+  int i = 0;  
 
   memcpy(data, DW1000Ranging.getCurrentShortAddress(), 2);
   i+=2;
@@ -58,17 +57,16 @@ byte *getData() {
   memcpy(data + i, AnchorData, 56);
   data_LEN = 46+AnchorDataSize;
   
-  
 
-  return data;
 
 }
 
 void sendUDPMessage() {
   // Send UDP message to the specified IP address and port
   udp.beginPacket(pcIpAddress, pcPort);
+  getData();
   byte send[data_LEN];
-  memcpy(send, getData(), data_LEN);
+  memcpy(send, data, data_LEN);
   Serial.println(data_LEN);
   
   udp.write(send, data_LEN);

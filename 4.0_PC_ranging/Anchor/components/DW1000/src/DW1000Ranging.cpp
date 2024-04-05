@@ -1129,8 +1129,8 @@ void DW1000RangingClass::getAnchorInfo(byte *AnchorData, int &AnchorDataSize){
 			}  
 			      
     	}
-		Serial.print("AnchorDataSize: ");
-		Serial.println(i);
+		//Serial.print("AnchorDataSize: ");
+		//Serial.println(i);
 		AnchorDataSize = i;
 	}
 	else {AnchorDataSize = 0;}
