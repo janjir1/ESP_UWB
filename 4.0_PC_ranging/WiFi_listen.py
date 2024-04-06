@@ -37,7 +37,7 @@ while True:
     # Receive data and address from the socket
     recived_data, adrr = sock.recvfrom(1024)  # 1024 is the buffer size
 
-    print(adrr)
+
 
     if recived_data:
 
