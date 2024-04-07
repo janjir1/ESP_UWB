@@ -2,6 +2,7 @@ from typing import Dict, Any
 from Functions import *
 
 class Anchor:
+
     instances: Dict[str, Any] = dict()
     max_meassurments: int = 5
 
@@ -15,36 +16,75 @@ class Anchor:
         return self.anchor_name
     
     def decode_data(self, recived_data: bytes, starting_position: int):
+        """
+        Decodes received data from Ultra-Wideband (UWB) devices using decoding keys.
+
+        This method is responsible for decoding data received from UWB devices,
+        including both tag and anchor data.
+        
+        Tag data are stored in a list called 'to_tag'
+        within the ToTagRange class, with index 0 representing the newest data.
+
+        Anchor data are stored in a dictionary called 'to_anchor', where each key is
+        the name of the anchor, and the corresponding value is a list of measurements.
+
+        Args:
+            received_data (bytes): The byte data received from UWB devices.
+            starting_position (int): The starting position in the byte data from where decoding begins.
+
+        Returns:
+            None
+        """
 
         byte_position = starting_position
         message_num = decode_bytes_to_dec(recived_data, byte_position, 2)
         byte_position += 2
 
-        self.decode_tag_data(recived_data, byte_position, message_num)
-        byte_position = byte_position + (len(self.get_tag_decode_key_top()) * get_decode_key_len(self.get_tag_decode_key()))
+        # Decode tag data
+        self._decode_tag_data(recived_data, byte_position, message_num)
+        byte_position = byte_position + (len(self._get_tag_decode_key_top()) * get_decode_key_len(self._get_tag_decode_key()))
 
+        # Decode anchor data if present
         if len(recived_data) > byte_position:
             anchor_ranges = decode_bytes_to_dec(recived_data, byte_position, 1)
             byte_position += 1
 
-            for anchor_range in range(anchor_ranges):
+            for _ in range(anchor_ranges):
+                # Extract anchor name
                 name = decode_bytes_to_hex(recived_data, byte_position, 2)
                 byte_position += 2
 
+                # Ensure anchor exists in 'to_anchor' dictionary
                 if name not in self.to_anchor.keys():
                     self.to_anchor[name] = list()
 
-                self.decode_anchor_data(recived_data, byte_position, name)
-                byte_position = byte_position + (get_decode_key_len(self.get_anchor_decode_key()))
+                # Decode anchor data
+                self._decode_anchor_data(recived_data, byte_position, name)
+                byte_position = byte_position + (get_decode_key_len(self._get_anchor_decode_key()))
 
-    def decode_tag_data(self, recived_data: bytes, starting_position: int, message_num: int) -> None:
+    def _decode_tag_data(self, recived_data: bytes, starting_position: int, message_num: int) -> None:
+        """
+         Decodes tag data from received message using predefined decoding keys.
 
-        decode_key_top = self.get_tag_decode_key_top()
+        Args:
+            received_data (bytes): The byte data received in the message.
+            starting_position (int): The starting position in the byte data from where decoding begins.
+            message_num (int): The identifier for the message being decoded.
+
+        Returns:
+            None
+
+        This method decodes the received byte data into structured tag data using decoding keys.
+        Decoding involves parsing the byte data based on predetermined structures and adding
+        the decoded information into the system.
+        """
+        decode_key_top = self._get_tag_decode_key_top()
         
         decode_position: int = 0
         byte_position = starting_position
         data: Dict[str, Dict[Any, Any]] = dict()
         
+        # Iterate through each meassurment in the decoding keys
         for _ in range(len(decode_key_top)):
             decode_sub_position = 0
 
@@ -52,7 +92,8 @@ class Anchor:
             
             data[content] = dict()
 
-            for i in range(len(self.get_tag_decode_key())):
+            # Iterate through each sub-meassurment under the current top
+            for i in range(len(self._get_tag_decode_key())):
 
                 sub_content = decode_key_top[decode_position]["sub"][decode_sub_position]["content"]
                 length = decode_key_top[decode_position]["sub"][decode_sub_position]["bytes"]
@@ -65,10 +106,26 @@ class Anchor:
 
             decode_position +=1
 
-        self.add_decoded_tag_data(data["POLL"], data["POLL_ACK"], data["RANGE"], message_num)
+        # Add the decoded tag data to the system
+        self.__add_decoded_tag_data(data["POLL"], data["POLL_ACK"], data["RANGE"], message_num)
 
-    def decode_anchor_data(self, recived_data: bytes, starting_position: int, anchor_name: str) -> None:
-        decode_key = self.get_anchor_decode_key()
+    def _decode_anchor_data(self, recived_data: bytes, starting_position: int, anchor_name: str) -> None:
+        """
+         Decodes anchor data from received message using predefined decoding keys.
+
+        Args:
+            received_data (bytes): The byte data received in the message.
+            starting_position (int): The starting position in the byte data from where decoding begins.
+            message_num (int): The identifier for the message being decoded.
+
+        Returns:
+            None
+
+        This method decodes the received byte data into structured tag data using decoding keys.
+        Decoding involves parsing the byte data based on predetermined structures and adding
+        the decoded information into the system.
+        """
+        decode_key = self._get_anchor_decode_key()
         
         decode_position: int = 0
         byte_position = starting_position
@@ -83,41 +140,80 @@ class Anchor:
 
             decode_position +=1
 
-        self.add_decoded_anchor_data(anchor_name, data["recived"], data["RXPower"], data["FPPower"])
+        self._add_decoded_anchor_data(anchor_name, data["recived"], data["RXPower"], data["FPPower"])
 
-    def add_decoded_tag_data(self, POLL: dict, POLL_ACK: dict, RANGE: dict, message_num: int) -> None:
+    def _add_decoded_tag_data(self, POLL: dict, POLL_ACK: dict, RANGE: dict, message_num: int) -> None:
+        """
+        Adds decoded tag data to the internal storage, maintaining a fixed number of latest measurements.
 
+        This method adds the decoded tag data, including POLL, POLL_ACK, and RANGE, to the internal storage
+        of the decoder. It inserts the data into a list named 'to_tag' within the ToTagRange class, ensuring
+        that the list contains the most recent measurements. If the number of measurements exceeds the maximum
+        allowed, the oldest measurement is removed.
+
+        Args:
+            POLL (dict): Dictionary containing decoded POLL data.
+            POLL_ACK (dict): Dictionary containing decoded POLL_ACK data.
+            RANGE (dict): Dictionary containing decoded RANGE data.
+            message_num (int): The message number associated with the decoded data.
+
+        Returns:
+            None
+        """
+        
+        # Check if the current message number is sequential to the previous one
         is_sequential = False
         if self.to_tag[0].get_message_num() == message_num-1 :
             is_sequential = True
 
+        # Insert the decoded data into the list of tag data
         self.to_tag.insert(0, ToTagRange(message_num, POLL, POLL_ACK, RANGE, is_sequential))
     
-
+        # Remove the oldest measurement
         if len(self.to_tag) > Anchor.max_meassurments:
             del self.to_tag[-1]
 
-    def add_decoded_anchor_data(self, anchor_name: str, rPOLL_ACK: int, RXPower: int, FPPower: int) -> None:
+    def _add_decoded_anchor_data(self, anchor_name: str, rPOLL_ACK: int, RXPower: int, FPPower: int) -> None:
+        """
+        Adds decoded anchor data to the internal storage, maintaining a fixed number of latest measurements.
 
+        This method adds the decoded anchor data, including rPOLL_ACK, RXPower, and FPPower, to the internal storage
+        of the decoder. It inserts the data into a list associated with the given anchor name within the 'to_anchor'
+        dictionary. The method ensures that the list contains the most recent measurements. If the number of measurements
+        exceeds the maximum allowed, the oldest measurement is removed.
+
+        Args:
+            anchor_name (str): The name of the anchor associated with the decoded data.
+            rPOLL_ACK (int): The decoded rPOLL_ACK data.
+            RXPower (int): The decoded RXPower data.
+            FPPower (int): The decoded FPPower data.
+
+        Returns:
+            None
+        """
+       # Extract sPOLL and rPOLL from the most recent tag data
         sPOLL, rPOLL = self.to_tag[0].get_anchor_range_data()
+
+        # Insert the decoded anchor data into the list associated with the anchor name
         self.to_anchor[anchor_name].insert(0, ToAnchorRange(anchor_name, rPOLL, sPOLL, rPOLL_ACK, RXPower, FPPower))
 
+        # Remove the oldest measurement
         if len(self.to_anchor[anchor_name]) > Anchor.max_meassurments:
             del self.to_anchor[anchor_name][-1]
 
-    def get_tag_decode_key(self) -> Dict[int, Dict[str, Any]]:
+    def _get_tag_decode_key(self) -> Dict[int, Dict[str, Any]]:
         return {0: {"bytes" : 5, "content" : "send"},
                 1: {"bytes" : 5, "content" : "recived"},
                 2: {"bytes" : 2, "content" : "RXPower"},
                 3: {"bytes" : 2, "content" : "FPPower"}}
     
-    def get_tag_decode_key_top(self) -> Dict[int, Dict[str, Any]]:
-        decode_key = self.get_tag_decode_key()
+    def _get_tag_decode_key_top(self) -> Dict[int, Dict[str, Any]]:
+        decode_key = self._get_tag_decode_key()
         return {0: {"content" : "POLL", "sub" : decode_key},
                 1: {"content" : "POLL_ACK", "sub" : decode_key},
                 2: {"content" : "RANGE", "sub" : decode_key}}
     
-    def get_anchor_decode_key(self) -> Dict[int, Dict[str, Any]]:
+    def _get_anchor_decode_key(self) -> Dict[int, Dict[str, Any]]:
         return {0: {"bytes" : 5, "content" : "recived"},
                 1: {"bytes" : 2, "content" : "RXPower"},
                 2: {"bytes" : 2, "content" : "FPPower"}}   
