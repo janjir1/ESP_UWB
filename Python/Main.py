@@ -25,3 +25,4 @@ while True:
 
         
         anchors[name].decode_data(recived_data, 2)
+        anchors[name].apply_antenna_calibration("D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv")

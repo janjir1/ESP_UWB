@@ -1,19 +1,23 @@
 from typing import Dict, Any
 from Functions import *
+import csv, os
 
 class Anchor:
 
     instances: Dict[str, Any] = dict()
     max_meassurments: int = 5
+    tag_name = "tag"
+    default_antenna_delay = 16384
+    delay_dict: Dict[str, int] = dict()
 
-    def __init__(self, anchor_name: str) -> None:
-        self.anchor_name = anchor_name 
+    def __init__(self, our_name: str) -> None:
+        self.our_name = our_name 
         self.to_tag: list = [ToTagRange() for _ in range(5)]
         self.to_anchor: Dict[str, list] = dict()
-        Anchor.instances[anchor_name] = self
+        Anchor.instances[our_name] = self
 
     def get_name(self) -> str:
-        return self.anchor_name
+        return self.our_name
     
     def decode_data(self, recived_data: bytes, starting_position: int):
         """
@@ -97,8 +101,11 @@ class Anchor:
 
                 sub_content = decode_key_top[decode_position]["sub"][decode_sub_position]["content"]
                 length = decode_key_top[decode_position]["sub"][decode_sub_position]["bytes"]
-
                 data[content][sub_content] = decode_bytes_to_dec(recived_data, byte_position, length)
+
+                if "Power" in sub_content:
+                    data[content][sub_content] = self._decode_power(data[content][sub_content])
+
 
                 byte_position = byte_position + length
 
@@ -107,7 +114,7 @@ class Anchor:
             decode_position +=1
 
         # Add the decoded tag data to the system
-        self.__add_decoded_tag_data(data["POLL"], data["POLL_ACK"], data["RANGE"], message_num)
+        self._add_decoded_tag_data(data["POLL"], data["POLL_ACK"], data["RANGE"], message_num)
 
     def _decode_anchor_data(self, recived_data: bytes, starting_position: int, anchor_name: str) -> None:
         """
@@ -136,11 +143,18 @@ class Anchor:
             content = decode_key[decode_position]["content"]
             length = decode_key[decode_position]["bytes"]
             data[content] = decode_bytes_to_dec(recived_data, byte_position, length)
+
+            if "Power" in content:
+                    data[content] = self._decode_power(data[content])
+
             byte_position = byte_position + length
 
             decode_position +=1
 
         self._add_decoded_anchor_data(anchor_name, data["recived"], data["RXPower"], data["FPPower"])
+
+    def _decode_power(self, power: int) -> float:
+        return -(power/100)
 
     def _add_decoded_tag_data(self, POLL: dict, POLL_ACK: dict, RANGE: dict, message_num: int) -> None:
         """
@@ -218,15 +232,52 @@ class Anchor:
                 1: {"bytes" : 2, "content" : "RXPower"},
                 2: {"bytes" : 2, "content" : "FPPower"}}   
 
+    def apply_antenna_calibration(self, delay_file_path: str) -> None:
 
+        if not self.delay_dict:
+            self._read_calibration(delay_file_path)
+
+        if not self.delay_dict[self.our_name]:
+            print(f"Using default delay calibration for {self.our_name}")
+            self.delay_dict[self.our_name] = self.default_antenna_delay
+
+        if not self.delay_dict[self.tag_name]:
+            print(f"Using default delay calibration for {self.tag_name}")
+            self.delay_dict[self.tag_name] = self.default_antenna_delay
+
+        self.to_tag[0].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[self.tag_name])
+
+        for key in self.to_anchor.keys():
+
+            if not self.delay_dict[key]:
+                print(f"Using default delay calibration for {key}")
+                self.delay_dict[key] = self.default_antenna_delay
+
+            self.to_anchor[key][0].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[key])
+
+    def _read_calibration(self, delay_file_path: str) -> None:
+
+        if os.path.exists(delay_file_path):
+            with open(delay_file_path, 'r', encoding='utf-8-sig') as file:
+                csv_reader = csv.reader(file, delimiter=';', )
+
+                for row in csv_reader:
+                    self.delay_dict[row[0]] = int(row[1])
+        else:
+            print("Using only default delay calibration")
+        
 class ToTagRange:
        
+    antenna_delay_recive = 0.45
+    antenna_delay_send = 1 - antenna_delay_recive
+
     def __init__(self, message_num: int = 0, POLL: Dict = {}, POLL_ACK: Dict= {}, RANGE: Dict= {}, is_sequential: bool = False):
         self.message_num = message_num
         self.POLL = POLL
         self.POLL_ACK = POLL_ACK
         self.RANGE = RANGE
         self.is_sequential = is_sequential
+        self.antenna_calibrated = False
 
     def get_message_num(self) -> int:
         return self.message_num
@@ -237,17 +288,45 @@ class ToTagRange:
     def print_times(self) -> None:
         print(f"message_num: {self.message_num}, POLL: {self.POLL}, POLL_ACK: {self.POLL_ACK}, RANGE: {self.RANGE}, is_sequential: {self.is_sequential}")
 
+    def apply_antenna_delay(self, our_delay: int, tag_delay: int) -> None:
+
+        if not self.antenna_calibrated:
+            self.POLL["send"] = self.POLL["send"] + (tag_delay * self.antenna_delay_send)
+            self.POLL["recived"] = self.POLL["recived"] + (our_delay * self.antenna_delay_recive)
+
+            self.POLL_ACK["send"] = self.POLL_ACK["send"] + (our_delay * self.antenna_delay_send)
+            self.POLL_ACK["recived"] = self.POLL_ACK["recived"] + (tag_delay * self.antenna_delay_recive)
+
+            self.RANGE["send"] = self.RANGE["send"] + (tag_delay * self.antenna_delay_send)
+            self.RANGE["recived"] = self.RANGE["recived"] + (our_delay * self.antenna_delay_recive)
+
+            self.antenna_calibrated = True
+
 
 class ToAnchorRange:
 
-    def __init__(self, anchor_name: str, rPOLL: int, sPOLL: int, rPOLL_ACK: int, RXPower: int, FPPower: int):
+    antenna_delay_recive = 0.45
+    antenna_delay_send = 1 - antenna_delay_recive
+
+    def __init__(self, anchor_name: str, rPOLL: float, sPOLL: float, rPOLL_ACK: float, RXPower: float, FPPower: float):
         self.anchor_name = anchor_name
         self.rPOLL = rPOLL
         self.sPOLL = sPOLL
         self.rPOLL_ACK = rPOLL_ACK
         self.RXPower = RXPower
         self.FPPower = FPPower
+        self.antenna_calibrated = False
 
     def get_anchor_name(self):
         return self.anchor_name
+    
+    def apply_antenna_delay(self, our_delay: int, anchor_delay: int) -> None:
+        
+        if not self.antenna_calibrated:
+            self.sPOLL = self.sPOLL + (anchor_delay * self.antenna_delay_send)
+            self.rPOLL = self.rPOLL + (our_delay * self.antenna_delay_recive)
+
+            self.rPOLL_ACK = self.rPOLL_ACK + (our_delay * self.antenna_delay_recive)
+
+            self.antenna_calibrated = True
 
