@@ -295,8 +295,6 @@ class Anchor:
         
 class ToTagRange:
        
-    antenna_delay_recive = 0.45
-    antenna_delay_send = 1 - antenna_delay_recive
     max_time = 1099511627775
 
     def __init__(self, message_num: int = 0, POLL: Dict = {}, POLL_ACK: Dict= {}, RANGE: Dict= {}, is_sequential: bool = False):
@@ -319,18 +317,18 @@ class ToTagRange:
     def apply_antenna_delay(self, our_delay: int, tag_delay: int) -> None:
 
         if not self.antenna_calibrated:
-            self.POLL["send"] = self.POLL["send"] + (tag_delay * self.antenna_delay_send)
-            self.POLL["recived"] = self.POLL["recived"] + (our_delay * self.antenna_delay_recive)
+            self.POLL["send"] = self.POLL["send"] + tag_delay
+            self.POLL["recived"] = self.POLL["recived"] - our_delay
 
-            self.POLL_ACK["send"] = self.POLL_ACK["send"] + (our_delay * self.antenna_delay_send)
-            self.POLL_ACK["recived"] = self.POLL_ACK["recived"] + (tag_delay * self.antenna_delay_recive)
+            self.POLL_ACK["send"] = self.POLL_ACK["send"] + our_delay
+            self.POLL_ACK["recived"] = self.POLL_ACK["recived"] - tag_delay
 
-            self.RANGE["send"] = self.RANGE["send"] + (tag_delay * self.antenna_delay_send)
-            self.RANGE["recived"] = self.RANGE["recived"] + (our_delay * self.antenna_delay_recive)
+            self.RANGE["send"] = self.RANGE["send"] + tag_delay
+            self.RANGE["recived"] = self.RANGE["recived"] - our_delay 
 
             self.antenna_calibrated = True
 
-    def calculate_clk_TOF(self) -> None:
+    def _calculate_clk_TOF(self) -> None:
 
         round1 = wrap(self.POLL_ACK["recived"] - self.POLL["send"], self.max_time)
         reply1 = wrap(self.POLL_ACK["send"] - self.POLL["recived"], self.max_time)
@@ -346,15 +344,12 @@ class ToTagRange:
         self.distance = self.TOF * speed_light
 
     def calculate_distance(self, timestep: int, speed_light: int) -> None:
-        self.calculate_clk_TOF()
+        self._calculate_clk_TOF()
         self.calculate_TOF(timestep)
         self.to_metres(speed_light)
 
 
 class ToAnchorRange:
-
-    antenna_delay_recive = 0.45
-    antenna_delay_send = 1 - antenna_delay_recive
 
     def __init__(self, anchor_name: str, rPOLL: float, sPOLL: float, rPOLL_ACK: float, RXPower: float, FPPower: float):
         self.anchor_name = anchor_name
@@ -371,10 +366,13 @@ class ToAnchorRange:
     def apply_antenna_delay(self, our_delay: int, anchor_delay: int) -> None:
         
         if not self.antenna_calibrated:
-            self.sPOLL = self.sPOLL + (anchor_delay * self.antenna_delay_send)
-            self.rPOLL = self.rPOLL + (our_delay * self.antenna_delay_recive)
+            self.sPOLL = self.sPOLL + anchor_delay
+            self.rPOLL = self.rPOLL - our_delay
 
-            self.rPOLL_ACK = self.rPOLL_ACK + (our_delay * self.antenna_delay_recive)
+            self.rPOLL_ACK = self.rPOLL_ACK - our_delay
 
             self.antenna_calibrated = True
 
+if __name__ == "__main__":
+    from Main import *
+    main()

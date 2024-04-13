@@ -624,6 +624,8 @@ void DW1000RangingClass::loop() {
 							computeRangeAsymmetric(myDistantDevice, &myTOF); // CHOSEN RANGING ALGORITHM
 							
 							float distance = myTOF.getAsMeters();
+							Serial.print("Distance ");Serial.println(distance);
+
 							
 							if (_useRangeFilter) {
 								//Skip first range
@@ -631,10 +633,10 @@ void DW1000RangingClass::loop() {
 									distance = filterValue(distance, myDistantDevice->getRange(), _rangeFilterValue);
 								}
 							}
-
-							myDistantDevice->setRange(distance);
-
 							*/
+							//myDistantDevice->setRange(distance);
+
+							
 						
 
 							if(_printInfo){
