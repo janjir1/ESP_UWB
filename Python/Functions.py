@@ -40,3 +40,9 @@ def start_UDP(UDP_IP: str = "0.0.0.0", UDP_PORT: int = 3334) -> socket.socket:
         except:
             print("Binding socket ...")
             time.sleep(1)
+
+def wrap(number: float, max_value = int) -> float:
+    if number < 0:
+        number = number + max_value + 1
+
+    return number

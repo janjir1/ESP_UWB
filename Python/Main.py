@@ -18,7 +18,7 @@ while True:
     if recived_data:
         
         name = decode_bytes_to_hex(recived_data, 0, 2)
-        print(f"Name: {name}")
+        
 
         if name not in anchors.keys():
             anchors[name] = Anchor(name)
@@ -26,3 +26,6 @@ while True:
         
         anchors[name].decode_data(recived_data, 2)
         anchors[name].apply_antenna_calibration("D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv")
+        anchors[name].calculate_tag_distance()
+        if name == "11a1":
+            print(f"{name} : {anchors[name].get_distance():.2f} m")

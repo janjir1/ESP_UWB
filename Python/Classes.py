@@ -9,6 +9,8 @@ class Anchor:
     tag_name = "tag"
     default_antenna_delay = 16384
     delay_dict: Dict[str, int] = dict()
+    timestep_res_ps = 15.650040064103
+    light_speed = 299702547 #atm
 
     def __init__(self, our_name: str) -> None:
         self.our_name = our_name 
@@ -232,8 +234,18 @@ class Anchor:
                 1: {"bytes" : 2, "content" : "RXPower"},
                 2: {"bytes" : 2, "content" : "FPPower"}}   
 
-    def apply_antenna_calibration(self, delay_file_path: str) -> None:
+    def apply_antenna_calibration(self, delay_file_path: str, position: int = 0) -> None:
+        """
+        Applies antenna delay calibration to tag and anchor data.
 
+        If the delay calibration for a specific entity (e.g., tag, anchor) is not available,
+        it applies the default antenna delay calibration.
+
+        Args:
+            delay_file_path (str): The file path to the CSV file containing delay calibration data.
+            position (int): at which saved meassurment to apply, 0 (latest) as default
+        """
+        
         if not self.delay_dict:
             self._read_calibration(delay_file_path)
 
@@ -245,7 +257,7 @@ class Anchor:
             print(f"Using default delay calibration for {self.tag_name}")
             self.delay_dict[self.tag_name] = self.default_antenna_delay
 
-        self.to_tag[0].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[self.tag_name])
+        self.to_tag[position].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[self.tag_name])
 
         for key in self.to_anchor.keys():
 
@@ -253,9 +265,18 @@ class Anchor:
                 print(f"Using default delay calibration for {key}")
                 self.delay_dict[key] = self.default_antenna_delay
 
-            self.to_anchor[key][0].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[key])
+            self.to_anchor[key][position].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[key])
 
     def _read_calibration(self, delay_file_path: str) -> None:
+        """
+        Reads delay calibration data from a CSV file and populates the delay dictionary.
+
+        The CSV file is expected to have two columns: the first column containing key values
+        and the second column containing corresponding delay values.
+
+        Args:
+            delay_file_path (str): The file path to the CSV file containing delay calibration data.
+        """
 
         if os.path.exists(delay_file_path):
             with open(delay_file_path, 'r', encoding='utf-8-sig') as file:
@@ -265,11 +286,18 @@ class Anchor:
                     self.delay_dict[row[0]] = int(row[1])
         else:
             print("Using only default delay calibration")
+
+    def calculate_tag_distance(self, position: int = 0) -> None:
+        self.to_tag[position].calculate_distance(self.timestep_res_ps * 10**(-12), self.light_speed)
+
+    def get_distance(self, position: int = 0) -> float:
+        return self.to_tag[position].distance
         
 class ToTagRange:
        
     antenna_delay_recive = 0.45
     antenna_delay_send = 1 - antenna_delay_recive
+    max_time = 1099511627775
 
     def __init__(self, message_num: int = 0, POLL: Dict = {}, POLL_ACK: Dict= {}, RANGE: Dict= {}, is_sequential: bool = False):
         self.message_num = message_num
@@ -301,6 +329,26 @@ class ToTagRange:
             self.RANGE["recived"] = self.RANGE["recived"] + (our_delay * self.antenna_delay_recive)
 
             self.antenna_calibrated = True
+
+    def calculate_clk_TOF(self) -> None:
+
+        round1 = wrap(self.POLL_ACK["recived"] - self.POLL["send"], self.max_time)
+        reply1 = wrap(self.POLL_ACK["send"] - self.POLL["recived"], self.max_time)
+        round2 = wrap(self.RANGE["recived"] - self.POLL_ACK["send"], self.max_time)
+        reply2 = wrap(self.RANGE["send"] - self.POLL_ACK["recived"], self.max_time)
+
+        self.clk_TOF = (round1 * round2 - reply1 * reply2)/(round1 + reply1 + round2 + reply2)
+
+    def calculate_TOF(self, timestep: int) -> None:
+        self.TOF = self.clk_TOF * timestep
+
+    def to_metres(self, speed_light: int) -> None:
+        self.distance = self.TOF * speed_light
+
+    def calculate_distance(self, timestep: int, speed_light: int) -> None:
+        self.calculate_clk_TOF()
+        self.calculate_TOF(timestep)
+        self.to_metres(speed_light)
 
 
 class ToAnchorRange:
