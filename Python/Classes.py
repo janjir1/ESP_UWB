@@ -292,7 +292,45 @@ class Anchor:
 
     def get_distance(self, position: int = 0) -> float:
         return self.to_tag[position].distance
+    
+    def _add_latest_data_csv(self) -> None:
+
+        raw_data = self.to_tag[0].get_raw_recived()
+        message_num = self.to_tag[0].get_message_num()
+        distance = self.to_tag[0].distance
+
+        self.csv_data.extend([{"Message num": message_num, "Action" : "POLL", **raw_data["POLL"], "distance": distance},
+                          {"Message num": message_num, "Action" : "POLL_ACK", **raw_data["POLL_ACK"], "distance": distance},
+                          {"Message num": message_num, "Action" : "RANGE", **raw_data["RANGE"], "distance": distance}])
+
+    def export_to_csv(self, num_messages: int, file_path: str, print_flag = False) -> bool:
+
+        if not hasattr(self, 'csv_data'):
+           self.csv_data = list()
+           self.csv_counter: int = 0
+           self.csv_finished = False
+
+        if not self.csv_finished:
+            if self.csv_counter < num_messages:
+                self._add_latest_data_csv()
+                if print_flag:
+                    print(f"Saving {self.csv_counter} message from device {self.our_name}")
+                self.csv_counter += 1
+                return False
+            
+            with open(file_path, mode='w', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=self.csv_data[0].keys())
+
+                writer.writeheader()
+    
+                writer.writerows(self.csv_data)
+                
+                self.csv_finished = True
+                return True
+
         
+
+
 class ToTagRange:
        
     max_time = 1099511627775
@@ -347,6 +385,9 @@ class ToTagRange:
         self._calculate_clk_TOF()
         self.calculate_TOF(timestep)
         self.to_metres(speed_light)
+
+    def get_raw_recived(self) -> Dict:
+        return {"POLL" : self.POLL, "POLL_ACK" : self.POLL_ACK, "RANGE" : self.RANGE}
 
 
 class ToAnchorRange:
