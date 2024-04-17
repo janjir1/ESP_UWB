@@ -53,7 +53,7 @@ DW1000Device::~DW1000Device() {
 }
 
 //setters:
-void DW1000Device::setReplyTime(uint16_t replyDelayTimeUs) { _replyDelayTimeUS = replyDelayTimeUs; }
+void DW1000Device::setReplyTime(uint32_t replyDelayTimeUs) { _replyDelayTimeUS = replyDelayTimeUs; }
 
 void DW1000Device::setAddress(char deviceAddress[]) { DW1000.convertToByte(deviceAddress, _ownAddress); }
 

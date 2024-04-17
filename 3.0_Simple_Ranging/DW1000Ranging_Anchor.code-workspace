@@ -1,13 +1,10 @@
 {
 	"folders": [
 		{
-			"path": "../4.Display_position/Anchor"
+			"path": "DW1000Ranging_Anchor"
 		},
 		{
-			"path": "../4.Display_position/Tag"
-		},
-		{
-			"path": "../4.Display_position/PC"
+			"path": "DW1000Ranging_Tag"
 		}
 	],
 	"settings": {

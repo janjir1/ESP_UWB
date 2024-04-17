@@ -43,7 +43,7 @@ public:
 	~DW1000Device();
 	
 	//setters:
-	void setReplyTime(uint16_t replyDelayTimeUs);
+	void setReplyTime(uint32_t replyDelayTimeUs);
 	void setAddress(char address[]);
 	void setAddress(byte* address);
 	void setShortAddress(byte address[]);
@@ -61,7 +61,7 @@ public:
 	void setFPPPollAck(float power);
 	void setFPPRange(float power);
 	
-	void setReplyDelayTime(uint16_t time) { _replyDelayTimeUS = time; }
+	void setReplyDelayTime(uint32_t time) { _replyDelayTimeUS = time; }
 	
 	void setIndex(int8_t index) { _index = index; }
 	
@@ -119,7 +119,7 @@ private:
 	byte         _ownAddress[8];
 	byte         _shortAddress[2];
 	int32_t      _activity;
-	uint16_t     _replyDelayTimeUS;
+	uint32_t     _replyDelayTimeUS;
 	int8_t       _index; // not used
 	
 	int16_t _range;

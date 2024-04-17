@@ -41,10 +41,13 @@
 #define BLINK 4
 #define RANGING_INIT 5
 
-#define LEN_DATA 90
+#define RANGE_LEN 21
+#define MAX_DEVICES 5
+
+#define LEN_DATA ((RANGE_LEN * MAX_DEVICES) + 11) // For some reason can be max 127 - TODO in library -> max 5 devices
 
 //Max devices we put in the networkDevices array ! Each DW1000Device is 74 Bytes in SRAM memory for now.
-#define MAX_DEVICES 5
+
 
 //Default Pin for module:
 #define DEFAULT_RST_PIN 9
@@ -55,20 +58,22 @@
 #define DEFAULT_RESET_PERIOD 200
 //in us
 #define DEFAULT_REPLY_DELAY_TIME 7000
+//in ms
+#define DEFAULT_REPLY_DELAY_TIME_MS (DEFAULT_REPLY_DELAY_TIME/1000)
 
 //sketch type (anchor or tag)
 #define TAG 0
 #define ANCHOR 1
 
 //default timer delay
-#define DEFAULT_TIMER_DELAY 80
+#define DEFAULT_TIMER_DELAY 20
 
 //debug mode
 #ifndef DEBUG
 #define DEBUG false
 #endif
 
-#define RANGE_LEN 21
+
 
 
 class DW1000RangingClass {
@@ -88,7 +93,7 @@ public:
 	static void    removeNetworkDevices(int16_t index);
 	
 	//setters
-	static void setReplyTime(uint16_t replyDelayTimeUs);
+	static void setReplyTime(uint32_t replyDelayTimeUs);
 	static void setResetPeriod(uint32_t resetPeriod);
 	
 	
@@ -139,7 +144,7 @@ private:
 	static byte         _lastSentToShortAddress[2];
 	static DW1000Mac    _globalMac;
 	static int32_t      timer;
-	static int16_t      counterForBlink;
+	static uint8_t      counterForBlink;
 	
 	//Handlers:
 	static void (* _handleNewRange)(void);
@@ -164,7 +169,7 @@ private:
 	static uint32_t    _lastActivity;
 	static uint32_t    _resetPeriod;
 	// reply times (same on both sides for symm. ranging)
-	static uint16_t     _replyDelayTimeUS;
+	static uint32_t     _replyDelayTimeUS;
 	//timer Tick delay
 	static uint16_t     _timerDelay;
 	// ranging counter (per second)

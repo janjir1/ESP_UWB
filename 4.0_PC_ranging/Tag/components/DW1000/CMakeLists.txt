@@ -4,6 +4,7 @@ set(srcs
   src/DW1000Mac.cpp
   src/DW1000Ranging.cpp
   src/DW1000Time.cpp
+  src/DW1000AnchorDevice.cpp
 
   )
 

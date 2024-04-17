@@ -63,7 +63,7 @@ volatile boolean DW1000RangingClass::_receivedAck = false;
 
 // timestamps to remember
 int32_t            DW1000RangingClass::timer           = 0;
-int16_t            DW1000RangingClass::counterForBlink = 0; // TODO 8 bit?
+uint8_t            DW1000RangingClass::counterForBlink = 0; // TODO 8 bit?
 
 volatile boolean DW1000RangingClass::_useRangeFilter = false;
 
@@ -77,7 +77,7 @@ uint8_t   DW1000RangingClass::_SS;
 uint32_t  DW1000RangingClass::_lastActivity;
 uint32_t  DW1000RangingClass::_resetPeriod;
 // reply times (same on both sides for symm. ranging)
-uint16_t  DW1000RangingClass::_replyDelayTimeUS;
+uint32_t  DW1000RangingClass::_replyDelayTimeUS;
 //timer delay
 uint16_t  DW1000RangingClass::_timerDelay;
 // ranging counter (per second)
@@ -297,7 +297,10 @@ boolean DW1000RangingClass::addNetworkDevices(DW1000Device* device) {
 		_networkDevices[_networkDevicesNumber] = *device;
 		//memcpy(&_networkDevices[_networkDevicesNumber], device, sizeof(DW1000Device));
 		_networkDevices[_networkDevicesNumber].setIndex(_networkDevicesNumber);
+
 		_networkDevicesNumber++;
+
+
 		return true;
 	}
 	
@@ -329,7 +332,7 @@ void DW1000RangingClass::removeNetworkDevices(int16_t index) {
  * ######################################################################### */
 
 //setters
-void DW1000RangingClass::setReplyTime(uint16_t replyDelayTimeUs) { _replyDelayTimeUS = replyDelayTimeUs; }
+void DW1000RangingClass::setReplyTime(uint32_t replyDelayTimeUs) { _replyDelayTimeUS = replyDelayTimeUs; }
 
 void DW1000RangingClass::setResetPeriod(uint32_t resetPeriod) { _resetPeriod = resetPeriod; }
 
@@ -406,12 +409,16 @@ void DW1000RangingClass::loop() {
 		timer = time;
 		timerTick();
 	}
+
+
 	
 	if(_sentAck) {
 		_sentAck = false;
+
 		
 		// TODO cc
 		int messageType = detectMessageType(data);
+
 		
 		if(messageType != POLL_ACK && messageType != POLL && messageType != RANGE)
 			return;
@@ -447,6 +454,7 @@ void DW1000RangingClass::loop() {
 				}
 			}
 			else if(messageType == RANGE) {
+				
 				DW1000Time timeRangeSent;
 				DW1000.getTransmitTimestamp(timeRangeSent);
 				//if the last device we send the POLL is broadcast:
@@ -473,12 +481,14 @@ void DW1000RangingClass::loop() {
 	//check for new received message
 	if(_receivedAck) {
 		_receivedAck = false;
+
 		
 		//we read the datas from the modules:
 		// get message and parse
 		DW1000.getData(data, LEN_DATA);
 		
 		int messageType = detectMessageType(data);
+
 		
 		//we have just received a BLINK message from tag
 		if(messageType == BLINK && _type == ANCHOR) {
@@ -535,13 +545,13 @@ void DW1000RangingClass::loop() {
 						//we need to test if this value is for us:
 						//we grab the mac address of each devices:
 						byte shortAddress[2];
-						memcpy(shortAddress, data+SHORT_MAC_LEN+2+i*4, 2);
+						memcpy(shortAddress, data+SHORT_MAC_LEN+2+i*6, 2);
 						
 						//we test if the short address is our address
 						if(shortAddress[0] == _currentShortAddress[0] && shortAddress[1] == _currentShortAddress[1]) {
 							//we grab the replytime wich is for us
-							uint16_t replyTime;
-							memcpy(&replyTime, data+SHORT_MAC_LEN+2+i*4+2, 2);
+							uint32_t replyTime;
+							memcpy(&replyTime, data+SHORT_MAC_LEN+2+2+i*6, 4);
 							//we configure our replyTime;
 							_replyDelayTimeUS = replyTime;
 							
@@ -581,6 +591,7 @@ void DW1000RangingClass::loop() {
 				}
 
 				else if(messageType == RANGE) {
+					Serial.println("Recived range");
 					//we receive a RANGE which is a broacast message
 					//we need to grab info about it
 					uint8_t numberDevices = 0;
@@ -594,6 +605,8 @@ void DW1000RangingClass::loop() {
 
 						//we test if the short address is our address
 						if(shortAddress[0] == _currentShortAddress[0] && shortAddress[1] == _currentShortAddress[1]) {
+
+							Serial.println("Its for us");
 							
 							//we grab the replytime wich is for us
 							DW1000.getReceiveTimestamp(myDistantDevice->timeRangeReceived);
@@ -694,8 +707,9 @@ void DW1000RangingClass::loop() {
 					myDistantDevice->noteActivity();
 					
 					//in the case the message come from our last device:
-					if(myDistantDevice->getIndex() == _networkDevicesNumber-1) {
 
+
+					if(myDistantDevice->getIndex() == _networkDevicesNumber-1) {
 						//and transmit the next message (range) of the ranging protocole (in broadcast)
 						transmitRange(nullptr);
 					}
@@ -859,7 +873,8 @@ void DW1000RangingClass::transmitPoll(DW1000Device* myDistantDevice) {
 	
 	if(myDistantDevice == nullptr) {
 		//we need to set our timerDelay:
-		_timerDelay = DEFAULT_TIMER_DELAY+(uint16_t)(_networkDevicesNumber*3*DEFAULT_REPLY_DELAY_TIME/1000);
+		
+		_timerDelay = DEFAULT_TIMER_DELAY+(uint16_t)(_networkDevicesNumber*3*DEFAULT_REPLY_DELAY_TIME_MS);
 		
 		byte shortBroadcast[2] = {0xFF, 0xFF};
 		_globalMac.generateShortMACFrame(data, _currentShortAddress, shortBroadcast);
@@ -871,11 +886,11 @@ void DW1000RangingClass::transmitPoll(DW1000Device* myDistantDevice) {
 			//each devices have a different reply delay time.
 			_networkDevices[i].setReplyTime((2*i+1)*DEFAULT_REPLY_DELAY_TIME);
 			//we write the short address of our device:
-			memcpy(data+SHORT_MAC_LEN+2+4*i, _networkDevices[i].getByteShortAddress(), 2);
+			memcpy(data+SHORT_MAC_LEN+2+6*i, _networkDevices[i].getByteShortAddress(), 2);
 			
 			//we add the replyTime
-			uint16_t replyTime = _networkDevices[i].getReplyTime();
-			memcpy(data+SHORT_MAC_LEN+2+2+4*i, &replyTime, 2);
+			uint32_t replyTime = _networkDevices[i].getReplyTime();
+			memcpy(data+SHORT_MAC_LEN+2+2+6*i, &replyTime, sizeof(uint32_t));
 			
 		}
 		
@@ -890,8 +905,31 @@ void DW1000RangingClass::transmitPoll(DW1000Device* myDistantDevice) {
 		
 		data[SHORT_MAC_LEN]   = POLL;
 		data[SHORT_MAC_LEN+1] = 1;
-		uint16_t replyTime = myDistantDevice->getReplyTime();
-		memcpy(data+SHORT_MAC_LEN+2, &replyTime, sizeof(uint16_t)); // todo is code correct?
+		uint32_t replyTime = myDistantDevice->getReplyTime();
+		memcpy(data+SHORT_MAC_LEN+2, &replyTime, sizeof(uint32_t)); // todo is code correct? - Není kokote 
+
+				/*
+				⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⠀⠀⠀⠀⣀⣤⡶⠶⠟⠛⠛⠛⠋⠙⠛⠛⠿⢶⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⠀⠀⣴⡾⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⢿⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⢠⣾⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣽⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⢠⣿⠃⠀⠀⢰⡶⠾⠿⠿⠛⠛⠻⣿⠋⠀⠀⢸⡟⠉⠉⣭⣍⢹⡿⣷⡀⠀⠀⠀⠀⠀⠀⠀
+		⠀⣾⠃⠀⠀⠀⣿⡀⠀⠀⠰⠿⠆⣠⡿⠀⠀⠀⠈⢷⣤⣀⣼⡿⠟⠀⠹⣷⠀⠀⠀⠀⠀⠀⠀
+		⢸⡟⠀⠀⠀⠀⠘⠿⣶⣤⣤⣶⠾⠟⠁⠀⠀⠀⠀⠀⠈⠉⣁⣀⣀⠀⠀⢻⡇⠀⠀⠀⠀⠀⠀
+		⢸⡇⠀⠀⠀⠀⢀⣀⣠⣤⣤⣤⡶⠶⠶⠶⠶⠖⠛⠛⠛⠛⣿⠋⠉⠀⠀⢸⣿⠀⠀⠀⠀⠀⠀
+		⣺⡇⠀⠀⠀⠈⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⡇⠀⠀⠀⣼⡇⠀⠀⠀⣤⡄⠀
+		⠸⣷⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣶⠀⢠⡿⠁⠀⣠⣾⠏⠀⠀⠀⢀⣿⣇⠀
+		⠀⠹⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⣦⠟⠁⣠⣾⠟⠁⠀⠀⠀⠀⣿⠉⣽⠂
+		⠀⠀⠈⠻⢷⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⠋⣹⣿⣴⡿⠋⠀⠀⢀⣠⣤⣶⣿⡽⠞⠁⠀
+		⠀⠀⠀⠀⠀⣸⡿⠻⠿⢶⣶⣶⣶⣶⣶⠶⣛⣷⡾⠛⠉⣿⣁⣠⠴⢞⣫⡵⠟⠋⠁⠀⠀⠀⠀
+		⠀⠀⠀⠀⣰⡟⠀⠀⢀⣤⡴⠟⣋⣥⡶⠚⠋⠁⠀⠀⠀⣿⣋⣤⠶⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⠀⢰⡿⠀⠀⠐⣋⣤⣶⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⢠⣿⠃⠀⠀⠘⠛⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠀⣼⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⢠⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⣼⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+		⠀⠈⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+				*/
 		
 		copyShortAddress(_lastSentToShortAddress, myDistantDevice->getByteShortAddress());
 	}
@@ -917,7 +955,7 @@ void DW1000RangingClass::transmitRange(DW1000Device* myDistantDevice) {
 	
 	if(myDistantDevice == nullptr) {
 		//we need to set our timerDelay:
-		_timerDelay = DEFAULT_TIMER_DELAY+(uint16_t)(_networkDevicesNumber*3*DEFAULT_REPLY_DELAY_TIME/1000);
+		_timerDelay = DEFAULT_TIMER_DELAY+(uint16_t)(_networkDevicesNumber*3*DEFAULT_REPLY_DELAY_TIME_MS);
 		
 		byte shortBroadcast[2] = {0xFF, 0xFF};
 		_globalMac.generateShortMACFrame(data, _currentShortAddress, shortBroadcast);
@@ -969,11 +1007,35 @@ void DW1000RangingClass::transmitRange(DW1000Device* myDistantDevice) {
 		copyShortAddress(_lastSentToShortAddress, myDistantDevice->getByteShortAddress());
 	}
 	
-	//Serial.print(" Data: ");
-	//visualizeDatas(data);
+	Serial.println("Data send");
+	//visualizeDatas(data, LEN_DATA);
 
 
 	transmit(data);
+
+	/*
+		⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡶⠛⠛⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠋⠀⠀⠀⠈⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⢀⣠⠴⠞⠛⠉⠉⠉⠉⠉⠉⠛⠒⠾⢤⣀⠀⣀⣠⣤⣄⡀⠀⠀⠀
+	⠀⠀⠀⣠⡶⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⢭⡀⠀⠈⣷⠀⠀⠀
+	⠀⠀⡴⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⢀⡟⠀⠀⠀
+	⠀⣾⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢻⡅⠀⠀⠀
+	⢸⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣄⣀⠀
+	⣾⠀⠀⣠⣤⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣤⣄⠀⠀⠀⠀⠀⠀⠸⡇⠉⣷
+	⣿⠀⠰⣿⣿⣿⡗⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⣧⡴⠋
+	⣿⠀⠀⢸⠛⢫⠀⠀⢠⠴⠒⠲⡄⠀⠀⠀⠀⡝⠛⢡⠀⠀⠀⠀⠀⠀⢰⡏⠀⠀
+	⢸⡄⠀⢸⡀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡇⠀⢸⠀⠀⠀⠀⠀⠀⡼⣄⠀⠀
+	⠀⢳⡄⠀⡇⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⠀⢸⠀⠀⠀⠀⢀⡼⠁⢸⡇⠀
+	⠀⠀⠙⢦⣷⡈⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠈⡇⠀⣀⡴⠟⠒⠚⠋⠀⠀
+	⠀⠀⠀⠀⠈⠛⠾⢤⣤⣀⣀⡀⠀⠀⠀⠀⣀⣈⣇⡤⣷⠚⠉⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⠀⣰⠇⠀⠩⣉⠉⠉⠉⣩⠍⠁⠀⢷⣟⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⠀⡟⠐⠦⠤⠼⠂⠀⠸⠥⠤⠔⠂⠘⣿⣇⠀⠀⠀⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⣸⣧⡟⠳⠒⡄⠀⠀⠀⡔⠲⠚⣧⣀⣿⠿⠷⣶⡆⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⠻⣄⢀⠀⠀⡗⠀⠀⠀⡇⠄⢠⠀⣼⠟⠀⢀⣨⠇⠀⠀⠀⠀⠀
+	⠀⠀⠀⠀⠀⠀⠀⠙⢶⠬⠴⢧⣤⣤⣤⣽⣬⡥⠞⠛⠛⠋⠉⠀⠀⠀⠀⠀⠀⠀
+
+	SAVE YOUR FILES
+	*/
 	
 }
 

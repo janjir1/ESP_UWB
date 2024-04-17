@@ -28,8 +28,8 @@ def live() -> None:
         if recived_data:
             name = decode_and_calculate(recived_data, r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv")
            
-            if name == "11a1":
-                print(f"{name} : {anchors[name].get_distance() * 100:.2f} cm")
+
+            print(f"{name} : {anchors[name].get_distance() * 100:.2f} cm")
 
 def record() -> None:
     sock = start_UDP()
@@ -43,7 +43,7 @@ def record() -> None:
         if recived_data:
             name = decode_and_calculate(recived_data, r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv")
 
-            anchors_finished[name] = anchors[name].export_to_csv(1000, f"data_{name}.csv", True)
+            anchors_finished[name] = anchors[name].export_to_csv(100, f"data_{name}.csv", True)
 
     print(f"Done")
             

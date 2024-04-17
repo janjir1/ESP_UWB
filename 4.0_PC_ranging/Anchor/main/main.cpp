@@ -14,7 +14,7 @@ const uint8_t PIN_RST = 27; // reset pin
 const uint8_t PIN_IRQ = 34; // irq pin
 const uint8_t PIN_SS = 4;   // spi select pin
 
-char *ESP_long_adrr =  "A1:11:5B:D5:A9:9A:E2:9C";
+char *ESP_long_adrr =  "A2:12:5B:D5:A9:9A:E2:9C";
 
 const char *ssid = "ESP_UWB";        // Replace with your WiFi SSID
 const char *password = "12346789";  // Replace with your WiFi password
@@ -121,8 +121,21 @@ void setup() {
 
   // Initialize UDP
   udp.begin(local_port);  // Local port for UDP communication
-
+/*
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  
+  // Print MAC address
+  Serial.print("MAC Address: ");
+  for (int i = 0; i < 6; ++i) {
+    Serial.print(mac[i], HEX);
+    if (i < 5) Serial.print(":");
+    
+  }
+  */
 }
+
+
 
 void loop() {
   
