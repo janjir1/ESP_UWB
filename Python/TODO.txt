@@ -1,0 +1,13 @@
+TODO:
+
+save to excel before natenna calib
+
+fix:
+File "d:\Files\Projects\ESP_UWB\Python\Main.py", line 16, in decode_and_calculate
+    anchors[name].apply_antenna_calibration(antenna_calibration_file)
+  File "d:\Files\Projects\ESP_UWB\Python\Classes.py", line 252, in apply_antenna_calibration
+    if not self.delay_dict[self.our_name]:
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+KeyError: '00'
+
+save to excel: add folders, custom names, fix main if, tell names of anchirs before starting

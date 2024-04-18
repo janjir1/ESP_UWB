@@ -103,6 +103,8 @@ public:
 	static byte* getCurrentShortAddress() { return _currentShortAddress; };
 	
 	static uint8_t getNetworkDevicesNumber() { return _networkDevicesNumber; };
+
+	static uint8_t getReplyDelayTimeMS()	{return (_replyDelayTimeUS/DEFAULT_REPLY_DELAY_TIME); };
 	
 	//ranging functions
 	static int16_t detectMessageType(byte datas[]); // TODO check return type

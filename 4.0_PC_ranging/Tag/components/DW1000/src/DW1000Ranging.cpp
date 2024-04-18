@@ -170,8 +170,8 @@ void DW1000RangingClass::startAsAnchor(char address[], const byte mode[], const 
 	DW1000.convertToByte(address, _currentAddress);
 	//write the address on the DW1000 chip
 	DW1000.setEUI(address);
-	//Serial.print("device address: ");
-	//Serial.println(address);
+	Serial.print("device address: ");
+	Serial.println(address);
 	if (randomShortAddress) {
 		//we need to define a random short address:
 		randomSeed(analogRead(0));
@@ -576,7 +576,7 @@ void DW1000RangingClass::loop() {
 				}
 
 				else if(messageType == POLL_ACK) {
-					Serial.println(address[0], HEX);
+					//Serial.println(address[0], HEX);
 					//DW1000AnchorDevice* myAnchor = new DW1000AnchorDevice(address);
 					DW1000AnchorDevice myAnchor(address);
 
@@ -591,7 +591,6 @@ void DW1000RangingClass::loop() {
 				}
 
 				else if(messageType == RANGE) {
-					Serial.println("Recived range");
 					//we receive a RANGE which is a broacast message
 					//we need to grab info about it
 					uint8_t numberDevices = 0;
@@ -605,8 +604,6 @@ void DW1000RangingClass::loop() {
 
 						//we test if the short address is our address
 						if(shortAddress[0] == _currentShortAddress[0] && shortAddress[1] == _currentShortAddress[1]) {
-
-							Serial.println("Its for us");
 							
 							//we grab the replytime wich is for us
 							DW1000.getReceiveTimestamp(myDistantDevice->timeRangeReceived);
@@ -1007,7 +1004,7 @@ void DW1000RangingClass::transmitRange(DW1000Device* myDistantDevice) {
 		copyShortAddress(_lastSentToShortAddress, myDistantDevice->getByteShortAddress());
 	}
 	
-	Serial.println("Data send");
+	//Serial.println("Data send");
 	//visualizeDatas(data, LEN_DATA);
 
 
@@ -1241,7 +1238,6 @@ void DW1000RangingClass::getTagInfo(byte *TagData){
 	power = lastTag->getFPPRange();
 	memcpy(TagData + i, &power, 2);
 }
-
 
 
 

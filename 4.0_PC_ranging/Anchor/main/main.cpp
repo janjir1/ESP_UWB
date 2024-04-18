@@ -34,6 +34,8 @@ static byte data[102];
 
 uint16_t message_num = 0;
 
+bool executeSendUDP = false;
+
 
 void getData() {
 
@@ -61,22 +63,42 @@ void getData() {
 
 }
 
-void sendUDPMessage() {
-  // Send UDP message to the specified IP address and port
-  udp.beginPacket(pcIpAddress, pcPort);
-  getData();
-  byte send[data_LEN];
-  memcpy(send, data, data_LEN);
-  Serial.println(data_LEN);
-  
-  udp.write(send, data_LEN);
-  udp.endPacket();
-  message_num++;
+void sendUDPMessage(void *param) {
+  for(;;){
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+
+     if (executeSendUDP) {
+      executeSendUDP = false;
+      
+      // Send UDP message to the specified IP address and port
+      udp.beginPacket(pcIpAddress, pcPort);
+      getData();
+      byte send[data_LEN];
+      memcpy(send, data, data_LEN);
+
+      uint8_t delay = DW1000Ranging.getReplyDelayTimeMS();
+      vTaskDelay(pdMS_TO_TICKS(delay));
+
+      Serial.print("Sending message num: "); Serial.print(message_num);
+      Serial.print(", with delay "); Serial.print(delay);Serial.print(" ms ");
+      Serial.print(", length "); Serial.print(data_LEN);Serial.print(" byte ");
+      Serial.print(", intercepted "); Serial.print((data_LEN-46)/12);Serial.println(" anchor messages");
+      
+      udp.write(send, data_LEN);
+      udp.endPacket();
+      
+      message_num++;
+      
+    }
+  }
+
 }
 
 void newRange() {
-  Serial.print("Sending message num: "); Serial.println(message_num);
-  sendUDPMessage();
+  
+  executeSendUDP = true;
+
   //DW1000Ranging.visualizeDatas(data);
 
 }
@@ -149,6 +171,9 @@ void setup() {
   getAdressFromMAC();
   Serial.print(", UWB adress: ");
   Serial.println(ESP_long_adrr);
+
+  xTaskCreate(sendUDPMessage, "WIFI", 2000, NULL, 1, NULL);
+
 
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
 
