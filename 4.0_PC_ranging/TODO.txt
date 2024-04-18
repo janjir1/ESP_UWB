@@ -1,15 +1,16 @@
 TODO:
 
 have to:
-fix delay(1) - is there on anchor to fight watchdog
+C fix watchdog - anchor X tag
 X fix number of devices > 3
 fix number of deices < 2
 do sdkconfig
+loop to task
 
 should:
 X better timing for more data and less latency
 X automaticly get ESP_long_adrr from something device specific
-all anchors start sending to PC at roughlz same time, add device specific latency for safer wifi transfer (POLL sends this information)
+X all anchors start sending to PC at roughlz same time, add device specific latency for safer wifi transfer (POLL sends this information)
 
 would be cool to:
 different way of getting wifi credantials (not hardcoded)
