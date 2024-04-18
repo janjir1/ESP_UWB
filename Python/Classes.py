@@ -297,11 +297,10 @@ class Anchor:
 
         raw_data = self.to_tag[0].get_raw_recived()
         message_num = self.to_tag[0].get_message_num()
-        distance = self.to_tag[0].distance
 
-        self.csv_data.extend([{"Message num": message_num, "Action" : "POLL", **raw_data["POLL"], "distance": distance},
-                          {"Message num": message_num, "Action" : "POLL_ACK", **raw_data["POLL_ACK"], "distance": distance},
-                          {"Message num": message_num, "Action" : "RANGE", **raw_data["RANGE"], "distance": distance}])
+        self.csv_data.extend([{"Message num": message_num, "Action" : "POLL", **raw_data["POLL"]},
+                          {"Message num": message_num, "Action" : "POLL_ACK", **raw_data["POLL_ACK"]},
+                          {"Message num": message_num, "Action" : "RANGE", **raw_data["RANGE"]}])
 
     def export_to_csv(self, num_messages: int, file_path: str, print_flag = False) -> bool:
 
@@ -324,7 +323,8 @@ class Anchor:
                 writer.writeheader()
     
                 writer.writerows(self.csv_data)
-                
+                if print_flag:
+                    print(f"exported .csv from device {self.our_name}")
                 self.csv_finished = True
                 return True
 
