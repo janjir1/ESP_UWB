@@ -14,7 +14,7 @@ const uint8_t PIN_RST = 27; // reset pin
 const uint8_t PIN_IRQ = 34; // irq pin
 const uint8_t PIN_SS = 4;   // spi select pin
 
-char *ESP_long_adrr =  "A2:12:5B:D5:A9:9A:E2:9C";
+char ESP_long_adrr[24] =  "A0:10:00:00:00:00:00:00";
 
 const char *ssid = "ESP_UWB";        // Replace with your WiFi SSID
 const char *password = "12346789";  // Replace with your WiFi password
@@ -92,11 +92,64 @@ void inactiveDevice(DW1000Device* device) {
   Serial.println(device->getShortAddress(), HEX);
 }
 
+void getAdressFromMAC(){
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  
+  // Print MAC address
+  Serial.print("MAC Address: ");
+  for (int i = 0; i < 6; ++i) {
+    Serial.print(mac[i], HEX);
+    if (i < 5) Serial.print(":");
+    
+  }
 
+  switch (mac[5]) {
+    case 0xd4:
+        sprintf(ESP_long_adrr, "A1:11:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        break;
+    case 0xec:
+        sprintf(ESP_long_adrr, "A2:12:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        break;
+    case 0xc8:
+        sprintf(ESP_long_adrr, "A3:13:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        break;
+    case 0xf0:
+        sprintf(ESP_long_adrr, "A4:14:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        break;
+    case 0x5c:
+        sprintf(ESP_long_adrr, "A5:15:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+        break;
+    default:
+      Serial.println("Unknown device");
+      sprintf(ESP_long_adrr, "A0:10:%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+      break;
+
+}
+
+
+
+}
 void setup() {
   Serial.begin(115200);
   delay(1000);
   //init the configuration
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Initialize UDP
+  udp.begin(local_port);  // Local port for UDP communication
+
+  getAdressFromMAC();
+  Serial.print(", UWB adress: ");
+  Serial.println(ESP_long_adrr);
+
   SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
 
   //init the configuration
@@ -110,29 +163,7 @@ void setup() {
   
   //we start the module as an anchor
   DW1000Ranging.startAsAnchor(ESP_long_adrr, DW1000.MODE_LONGDATA_RANGE_ACCURACY, false);
-
-  // Connect to WiFi
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("Connected to WiFi");
-
-  // Initialize UDP
-  udp.begin(local_port);  // Local port for UDP communication
-/*
-  uint8_t mac[6];
-  WiFi.macAddress(mac);
   
-  // Print MAC address
-  Serial.print("MAC Address: ");
-  for (int i = 0; i < 6; ++i) {
-    Serial.print(mac[i], HEX);
-    if (i < 5) Serial.print(":");
-    
-  }
-  */
 }
 
 

@@ -170,8 +170,8 @@ void DW1000RangingClass::startAsAnchor(char address[], const byte mode[], const 
 	DW1000.convertToByte(address, _currentAddress);
 	//write the address on the DW1000 chip
 	DW1000.setEUI(address);
-	Serial.print("device address: ");
-	Serial.println(address);
+	//Serial.print("device address: ");
+	//Serial.println(address);
 	if (randomShortAddress) {
 		//we need to define a random short address:
 		randomSeed(analogRead(0));
