@@ -52,8 +52,11 @@ void setup() {
 }
 
 void loop() {
+
   DW1000Ranging.loop();
-  //delay(1);
+
+  // single core task - removed watchdog timer on CORE 0
+
 }
 
 

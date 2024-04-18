@@ -1004,7 +1004,7 @@ void DW1000RangingClass::transmitRange(DW1000Device* myDistantDevice) {
 		copyShortAddress(_lastSentToShortAddress, myDistantDevice->getByteShortAddress());
 	}
 	
-	//Serial.println("Data send");
+	Serial.println("Data send");
 	//visualizeDatas(data, LEN_DATA);
 
 

@@ -1,10 +1,10 @@
 TODO:
 
 have to:
-C fix watchdog - anchor X tag
+C fix watchdog - anchor X tag X
 X fix number of devices > 3
 fix number of deices < 2
-do sdkconfig
+X do sdkconfig
 loop to task
 
 should:
