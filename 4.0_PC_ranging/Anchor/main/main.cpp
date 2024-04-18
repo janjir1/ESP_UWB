@@ -196,7 +196,6 @@ void setup() {
 void loop() {
   
   DW1000Ranging.loop();
-  delay(1);
 
 }
 
