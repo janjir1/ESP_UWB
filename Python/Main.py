@@ -50,15 +50,15 @@ def live(sock: socket) -> None:
         if recived_data:
 
             name = decode(recived_data)
-            calculate(name, r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv")
+            calculate(name, r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv")
 
         
-            print(f"{name} : {anchors[name].get_distance() * 100:.2f} cm")
+            print(f"{name} : {anchors[name].get_distance()[0] * 100:.2f} cm, RXPower: {anchors[name].get_distance()[1]}")
 
 def record(sock: socket) -> None:
 
     
-    path = r"D:\Files\Projects\ESP_UWB\Python"
+    path = r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python"
 
     meassurment_name = input("Enter meassurment name (folder name): ")
 

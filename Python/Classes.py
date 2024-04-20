@@ -290,8 +290,8 @@ class Anchor:
     def calculate_tag_distance(self, position: int = 0) -> None:
         self.to_tag[position].calculate_distance(self.timestep_res_ps * 10**(-12), self.light_speed)
 
-    def get_distance(self, position: int = 0) -> float:
-        return self.to_tag[position].distance
+    def get_distance(self, position: int = 0) -> tuple:
+        return self.to_tag[position].distance, self.to_tag[position].RANGE["RXPower"]
     
     def _add_latest_data_csv(self) -> None:
 
