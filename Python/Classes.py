@@ -12,10 +12,11 @@ class Anchor:
     timestep_res_ps = 15.650040064103
     light_speed = 299702547 #atm
 
-    def __init__(self, our_name: str) -> None:
+    def __init__(self, our_name: str, delay_file_path: str = "defult") -> None:
         self.our_name = our_name 
         self.to_tag: list = [ToTagRange() for _ in range(5)]
         self.to_anchor: Dict[str, list] = dict()
+        self._read_calibration(delay_file_path)
         Anchor.instances[our_name] = self
 
     def get_name(self) -> str:
@@ -246,33 +247,15 @@ class Anchor:
             position (int): at which saved meassurment to apply, 0 (latest) as default
         """
         
-        if not self.delay_dict:
-            self._read_calibration(delay_file_path)
 
-        if not self.delay_dict[self.our_name]:
-            print(f"Using default delay calibration for {self.our_name}")
-            self.delay_dict[self.our_name] = self.default_antenna_delay
-
-        if not self.delay_dict[self.tag_name]:
-            print(f"Using default delay calibration for {self.tag_name}")
-            self.delay_dict[self.tag_name] = self.default_antenna_delay
-
-        self.to_tag[position].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[self.tag_name])
-
-        for key in self.to_anchor.keys():
-
-            if not self.delay_dict[key]:
-                print(f"Using default delay calibration for {key}")
-                self.delay_dict[key] = self.default_antenna_delay
-
-            self.to_anchor[key][position].apply_antenna_delay(self.delay_dict[self.our_name], self.delay_dict[key])
+        self.to_tag[position].set_antenna_delay(self.calib_data)
 
     def _read_calibration(self, delay_file_path: str) -> None:
         """
-        Reads delay calibration data from a CSV file and populates the delay dictionary.
+        Reads delay calibration data from a CSV file.
 
-        The CSV file is expected to have two columns: the first column containing key values
-        and the second column containing corresponding delay values.
+        The CSV file is expected to have three columns: the first column containing key values
+        and the second and third column containing corresponding delay values.
 
         Args:
             delay_file_path (str): The file path to the CSV file containing delay calibration data.
@@ -283,9 +266,11 @@ class Anchor:
                 csv_reader = csv.reader(file, delimiter=';', )
 
                 for row in csv_reader:
-                    self.delay_dict[row[0]] = int(row[1])
+                    if row[0] == self.our_name:
+                        self.calib_data: list = [float(row[1]), float(row[2])]
         else:
             print("Using only default delay calibration")
+            self.calib_data: list = [0, 513]
 
     def calculate_tag_distance(self, position: int = 0) -> None:
         self.to_tag[position].calculate_distance(self.timestep_res_ps * 10**(-12), self.light_speed)
@@ -352,19 +337,15 @@ class ToTagRange:
     def print_times(self) -> None:
         print(f"message_num: {self.message_num}, POLL: {self.POLL}, POLL_ACK: {self.POLL_ACK}, RANGE: {self.RANGE}, is_sequential: {self.is_sequential}")
 
-    def apply_antenna_delay(self, our_delay: int, tag_delay: int) -> None:
+    def set_antenna_delay(self, antenna_delay: list) -> None:
+        self.antenna_calibrated = True
+        self.antenna_delay = antenna_delay
 
-        if not self.antenna_calibrated:
-            self.POLL["send"] = self.POLL["send"] + tag_delay
-            self.POLL["recived"] = self.POLL["recived"] - our_delay
+    def apply_antenna_delay(self) -> None:
 
-            self.POLL_ACK["send"] = self.POLL_ACK["send"] + our_delay
-            self.POLL_ACK["recived"] = self.POLL_ACK["recived"] - tag_delay
-
-            self.RANGE["send"] = self.RANGE["send"] + tag_delay
-            self.RANGE["recived"] = self.RANGE["recived"] - our_delay 
-
-            self.antenna_calibrated = True
+        RXPower = (self.POLL["RXPower"] + self.POLL_ACK["RXPower"] + self.RANGE["RXPower"])/3
+        delay = (self.antenna_delay[0]*RXPower + self.antenna_delay[1])*10**-9
+        self.TOF = self.TOF - delay
 
     def _calculate_clk_TOF(self) -> None:
 
@@ -384,6 +365,10 @@ class ToTagRange:
     def calculate_distance(self, timestep: int, speed_light: int) -> None:
         self._calculate_clk_TOF()
         self.calculate_TOF(timestep)
+
+        if self.antenna_calibrated:
+            self.apply_antenna_delay()
+
         self.to_metres(speed_light)
 
     def get_raw_recived(self) -> Dict:
