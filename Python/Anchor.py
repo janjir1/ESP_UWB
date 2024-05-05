@@ -7,12 +7,12 @@ class Anchor:
     instances: Dict[str, Any] = dict()
     max_meassurments: int = 5
     tag_name = "tag"
-    default_antenna_delay = 16384
     delay_dict: Dict[str, int] = dict()
     timestep_res_ps = 15.650040064103
     light_speed = 299702547 #atm
+    defalut_antenna_delay = 514
 
-    def __init__(self, our_name: str, delay_file_path: str = "defult") -> None:
+    def __init__(self, our_name: str, delay_file_path: str = "defalut") -> None:
         self.our_name = our_name 
         self.to_tag: list = [ToTagRange() for _ in range(5)]
         self.to_anchor: Dict[str, list] = dict()
@@ -270,7 +270,7 @@ class Anchor:
                         self.calib_data: list = [float(row[1]), float(row[2])]
         else:
             print("Using only default delay calibration")
-            self.calib_data: list = [0, 513]
+            self.calib_data: list = [0, self.defalut_antenna_delay]
 
     def calculate_tag_distance(self, position: int = 0) -> None:
         self.to_tag[position].calculate_distance(self.timestep_res_ps * 10**(-12), self.light_speed)

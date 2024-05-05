@@ -2,13 +2,14 @@ from typing import Dict, Any
 import time, os
 
 from Functions import *
-from Classes import Anchor
+from Anchor import Anchor
+
+calib_file_path = r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv"
 
 anchors: Dict[str, Any] = dict()
 
 def calculate(name: str, antenna_calibration_file: str) -> None:
 
-    
     anchors[name].apply_antenna_calibration(antenna_calibration_file)
     anchors[name].calculate_tag_distance()
 
@@ -17,7 +18,7 @@ def decode(recived_data: Any) -> str:
     name = decode_bytes_to_hex(recived_data, 0, 2)
             
     if name not in anchors.keys():
-        anchors[name] = Anchor(name)
+        anchors[name] = Anchor(name, calib_file_path)
 
     anchors[name].decode_data(recived_data, 2)
 
@@ -52,8 +53,8 @@ def live(sock: socket) -> None:
             name = decode(recived_data)
             calculate(name, r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv")
 
-        
-            print(f"{name} : {anchors[name].get_distance()[0] * 100:.2f} cm, RXPower: {anchors[name].get_distance()[1]}")
+            if name == "11a1":
+                print(f"{name} : {anchors[name].get_distance()[0] * 100:.2f} cm, RXPower: {anchors[name].get_distance()[1]}")
 
 def record(sock: socket) -> None:
 
