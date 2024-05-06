@@ -1,6 +1,8 @@
 from typing import Dict, Any
 import socket
 import time
+from math import pi as pi
+from math import e as euler
 
 def decode_bytes_to_dec(data: bytes, starting_position: int, length: int) -> int:
     message_byte = data[starting_position : starting_position + length]
@@ -46,3 +48,7 @@ def wrap(number: float, max_value = int) -> float:
         number = number + max_value + 1
 
     return number
+
+def normal_dist(mean: float, std_deviation: float, number: float) -> float:
+    exp = pow(((number-mean)/std_deviation), 2)/2
+    return (1/(std_deviation*pow(2*pi, 0.5)))*pow(euler, -exp)
