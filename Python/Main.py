@@ -3,6 +3,7 @@ import time, os
 
 from Functions import *
 from Anchor import Anchor
+from ParticleSpace import space
 
 calib_file_path = r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv"
 
@@ -42,19 +43,66 @@ def get_anchors(sock: socket, timer: int = 2) -> list:
     return list(anchors_to_track.keys())
 
 def live(sock: socket) -> None:
-    
+
+    anchors_list = get_anchors(sock)
+    print(anchors_list)
+    data_list = []
+
+    init_space_dimension = [4, 4, 2]
+    particleSpace = space(10000, init_space_dimension)
+    particleSpace.update_anchor("11a1", [0, 0, 0])
+    particleSpace.update_anchor("12a2", [0, 3, 0])
+    particleSpace.update_anchor("13a3", [-1, 0, 0])
+
+    sock.setblocking(0)
 
     while True:
 
-        recived_data, adrr = sock.recvfrom(1024)
+        while True:
+            try:
+                sock_data, addr = sock.recvfrom(1024)
 
-        if recived_data:
+                data_list.append([sock_data, time.perf_counter()])
+                if len(data_list) > len(anchors_list):
+                    data_list = data_list[-len(anchors_list):]
 
-            name = decode(recived_data)
-            calculate(name, r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv")
+            except BlockingIOError:
+                break
 
-            if name == "11a1":
+        start_time = time.perf_counter()
+        delta_time = 0
+
+        if len(data_list) > 0:
+            for packet in data_list:
+
+                recived_data = packet[0]
+                recive_time = packet[1] + delta_time
+
+                name = decode(recived_data)
+                calculate(name, r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv")
+                calculated_time = time.perf_counter()
+
                 print(f"{name} : {anchors[name].get_distance()[0] * 100:.2f} cm, RXPower: {anchors[name].get_distance()[1]}")
+                distance = anchors[name].get_distance()[0]
+
+                if bs_filter(distance):
+                    time_start = time.perf_counter()
+                    if particleSpace.update_space(name, anchors[name].get_distance()[0], recive_time):
+                        #print(f"average fit = {particleSpace.average_fit():.2f}")
+                        print(f"update space {time.perf_counter() - time_start}")
+
+                        time_start = time.perf_counter()
+                        particleSpace.evolve_space()
+                        print(f"evolve space {time.perf_counter() - time_start}")
+
+                        time_start = time.perf_counter()
+                        particleSpace.visualize()
+                        print(f"visualize {time.perf_counter() - time_start}")
+                        #print(f"decode and calulation time {calculated_time-recive_time}, particle time {time.perf_counter() - calculated_time}, total {time.perf_counter()-recive_time}")
+
+                delta_time = time.perf_counter() - start_time
+        data_list = []
+
 
 def record(sock: socket) -> None:
 

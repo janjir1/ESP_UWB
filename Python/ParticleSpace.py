@@ -1,12 +1,12 @@
 from typing import Dict, Any
 import numpy as np
 from dataclasses import dataclass
-import matplotlib.pyplot as plt
+import os, csv
 import time
 from Functions import *
 
 max_init_speed: tuple = (1, 1, 1)
-max_acceleration: tuple = (0.5, 0.5, 0.5)
+max_acceleration: tuple = (10, 10, 10)
 to_keep = 0.01 # how many best particles are "elite"
 
 
@@ -17,6 +17,7 @@ class space:
         self._init_create_particles(init_space_dimension)
         self.anchors: list = []
         self.last_time = time.perf_counter()
+        self.runVisualize = True
 
     def _init_create_particles(self, space_dimension) -> None:
         
@@ -32,34 +33,61 @@ class space:
             for dimension in space_dimension:
                 position.append(np.random.uniform(high=dimension))
 
-            self.particles.append(particle(position, velocity))
+            self.particles.append(particleClass(position, velocity))
 
             
-    def update_space(self, anchor_name: str, distance: float, time: float):
+    def update_space(self, anchor_name: str, distance: float, time: float) ->bool:
         
         if not any(i.name == anchor_name for i in self.anchors):
             print(f"unknown anchor {anchor_name} meassurment is ignored")
-            return
+            return False
         
         for i in self.anchors:
                 if i.name == anchor_name:
                     anchor_position = i.position
         
-        timestep = self._get_timestep(time)
+        self._get_timestep(time)
 
+        
         for particle in self.particles:
-            particle.new_meassurment(anchor_position, timestep, distance)
+            particle.new_meassurment(anchor_position, self.timestep, distance)
+        
+
+        #print(f"Update from {anchor_name}, distance {distance:.2f} m, timestep {self.timestep:.2f}, average fit {self.average_fit():.2f}")
+
+        return True
 
     def _get_timestep(self, time) -> float:
-        timestep = (time - self.last_time)
+        self.timestep = (time - self.last_time)
         self.last_time = time
-        return timestep
+
 
     def evolve_space(self) -> None:
-        sorted_particles = sorted(self.particles, reverse=True)
-        to_remove = int((1-to_keep) * len(sorted_particles))
-        self.particles = sorted_particles[:-to_remove]
+        self.sorted_particles = sorted(self.particles, reverse=True)
+        to_remove = int((1-to_keep) * len(self.sorted_particles))
+        self.sorted_particles =  self.sorted_particles[:-to_remove]
 
+        self.particles =  self.sorted_particles.copy()
+
+        offsprings = int((1/to_keep)-1)
+
+        for particle in  self.sorted_particles:
+            self._multipy_partcle(particle, offsprings)
+
+
+
+
+    def _multipy_partcle(self, particle, replicate: int):
+        position = particle.get_particle_position()
+        velocity_parent = particle.get_particle_velocity()
+
+        for _ in range(replicate):
+            velocity: list = []
+            for dimension in range(len(velocity_parent)):
+                accelartion = np.random.uniform(low=-max_acceleration[dimension], high=max_acceleration[dimension])
+                velocity.append(velocity_parent[dimension]+accelartion*self.timestep)
+
+            self.particles.append(particleClass(position, velocity))
 
     def get_tag_position(self) -> list:
         #averages top x% of pratricles, returns [position, velocity]
@@ -68,7 +96,7 @@ class space:
     def update_anchor(self, anchor_name: str, position: list) -> None:
 
         if not any(i.name == anchor_name for i in self.anchors):
-            self.anchors.append(anchor(anchor_name, position))
+            self.anchors.append(anchorClass(anchor_name, position))
 
         else:
             for i in self.anchors:
@@ -77,34 +105,45 @@ class space:
         
     def visualize(self) -> None:
 
-        size = 1
+        if self.runVisualize:
+            self.runVisualize = False
+            os.system("start python visualize.py")
 
-        all_particles = [particle.get_particle_position() for particle in self.particles]
-        particle_x, particle_y, particle_z = zip(*all_particles)
+        namafile = 'visualize.csv'
+        fieldnames = ["x_coord", "y_coord", "z_coord", "type"]
 
-        all_anchors = [anchor.position for anchor in self.anchors]
-        anchor_x, anchor_y, anchor_z = zip(*all_anchors)
-
-        # Create the plot
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-
-        # Plot all particles in one call
-        ax.scatter(particle_x, particle_y, particle_z, marker="x", s = size)
-        ax.scatter(anchor_x, anchor_y, anchor_z, marker="h", s = size*20)
-
-        # Set labels
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-
-        ax.axis('equal')
-
-        plt.show()
+        particle_positions = []
+        for particle in self.sorted_particles:
+            line = particle.get_particle_position()
+            line.append("particle")
+            particle_positions.append(line)
 
 
+        anchor_positionis = []
+        for anchor in self.anchors:
+            line = anchor.position.copy()
+            line.append("anchor")
+            anchor_positionis.append(line)
 
-class particle:
+        
+
+        with open(namafile, 'w') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(fieldnames)
+            csv_writer.writerows(particle_positions)
+            csv_writer.writerows(anchor_positionis)
+
+
+    def average_fit(self) -> float:
+        average_fit: float = 0
+        for particle in self.particles:
+            average_fit = average_fit + particle.get_fit()
+
+        return average_fit/len(self.particles)
+
+
+
+class particleClass:
 
     
     #velocity boundaries
@@ -132,14 +171,19 @@ class particle:
         self.fit=normal_dist(self.to_anchor, self.std_deviation, distance_m)
 
     def get_particle_position(self) -> list:
-        return self.position
-
+        return self.position.tolist()
+    
+    def get_particle_velocity(self) -> list:
+        return self.velocity.tolist()
+    
+    def get_fit(self) -> float:
+        return self.fit
 
     def __lt__(self, value):
          return self.fit < value.fit
 
 
 @dataclass
-class anchor:
+class anchorClass:
     name: str
     position: list #XYZ
