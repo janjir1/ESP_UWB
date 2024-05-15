@@ -49,10 +49,10 @@ def live(sock: socket) -> None:
     data_list = []
 
     init_space_dimension = [4, 4, 2]
-    particleSpace = space(10000, init_space_dimension)
-    particleSpace.update_anchor("11a1", [0, 0, 0])
-    particleSpace.update_anchor("12a2", [0, 3, 0])
-    particleSpace.update_anchor("13a3", [-1, 0, 0])
+    particleSpace = space(25000, init_space_dimension)
+    particleSpace.update_anchor("11a1", [0.0, 0.0, 0.0])
+    particleSpace.update_anchor("12a2", [0.0, 3.0, 0.0])
+    particleSpace.update_anchor("13a3", [-1.0, 0.0, 0.0])
 
     sock.setblocking(0)
 

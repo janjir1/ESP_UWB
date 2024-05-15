@@ -4,9 +4,10 @@ from dataclasses import dataclass
 import os, csv
 import time
 from Functions import *
+from numba import njit, float64, float32
 
 max_init_speed: tuple = (1, 1, 1)
-max_acceleration: tuple = (10, 10, 10)
+max_acceleration = np.array([10, 10, 10])
 to_keep = 0.01 # how many best particles are "elite"
 
 
@@ -62,7 +63,7 @@ class space:
         self.last_time = time
 
 
-    def evolve_space(self) -> None:
+    def evolve_space(self) -> None:        
         self.sorted_particles = sorted(self.particles, reverse=True)
         to_remove = int((1-to_keep) * len(self.sorted_particles))
         self.sorted_particles =  self.sorted_particles[:-to_remove]
@@ -79,14 +80,10 @@ class space:
 
     def _multipy_partcle(self, particle, replicate: int):
         position = particle.get_particle_position()
-        velocity_parent = particle.get_particle_velocity()
+        velocity_parent = np.array(particle.get_particle_velocity())
 
         for _ in range(replicate):
-            velocity: list = []
-            for dimension in range(len(velocity_parent)):
-                accelartion = np.random.uniform(low=-max_acceleration[dimension], high=max_acceleration[dimension])
-                velocity.append(velocity_parent[dimension]+accelartion*self.timestep)
-
+            velocity = daughter_particle_velocity(velocity_parent, self.timestep)
             self.particles.append(particleClass(position, velocity))
 
     def get_tag_position(self) -> list:
@@ -144,8 +141,6 @@ class space:
 
 
 class particleClass:
-
-    
     #velocity boundaries
 
     def __init__(self, position: list, velocity: list):
@@ -157,10 +152,14 @@ class particleClass:
         self.std_deviation = 0.027
 
     def new_meassurment(self, anchor_position: float, timestep_delta, distance_m: float) -> None:
-        self._update_particle(timestep_delta)
-        self._dist_to_anchor(anchor_position)
-        self._calculate_fit(distance_m)
+        #self._update_particle(timestep_delta)
+        self.position = update_particle(timestep_delta, self.position, self.velocity)
+        #self._dist_to_anchor(anchor_position)
+        self.to_anchor = dist_to_anchor(np.array(anchor_position), self.position)
+        #self._calculate_fit(distance_m)
+        self.fit=normal_dist(self.to_anchor, self.std_deviation, distance_m)
 
+    
     def _update_particle(self, timestep: float) -> None:
         self.position = self.position + (self.velocity * timestep)
 
@@ -187,3 +186,26 @@ class particleClass:
 class anchorClass:
     name: str
     position: list #XYZ
+
+@njit(float64(float64[:]), cache=True)
+def custom_norm(arr):
+    return np.sqrt(np.sum(arr ** 2))
+
+@njit(float64(float64[:], float64[:]), cache=True)
+def dist_to_anchor(anchor_position, position):
+    return custom_norm(position - anchor_position)
+
+@njit(float32(float32, float32, float32), cache=True)
+def normal_dist(mean, std_deviation, number):
+    exp = ((number - mean) / std_deviation) ** 2 / 2
+    return (1 / (std_deviation * (2 * pi) ** 0.5)) * euler ** (-exp)
+
+@njit(float64[:](float64, float64[:], float64[:]), cache=True)
+def update_particle(timestep, position, velocity):
+        return (position + (velocity * timestep))
+
+@njit(float64[:](float64[:], float64), cache=True)
+def daughter_particle_velocity(velocity_parent, timestep):
+    random = np.random.random(3) -0.5
+    return velocity_parent + ((random * max_acceleration * 2) * timestep)
+    

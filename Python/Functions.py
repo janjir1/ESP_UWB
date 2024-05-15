@@ -48,11 +48,11 @@ def wrap(number: float, max_value = int) -> float:
         number = number + max_value + 1
 
     return number
-
+"""
 def normal_dist(mean: float, std_deviation: float, number: float) -> float:
     exp = pow(((number-mean)/std_deviation), 2)/2
     return (1/(std_deviation*pow(2*pi, 0.5)))*pow(euler, -exp)
-
+"""
 def bs_filter(distance: float) -> bool:
     if distance > 300 or distance < 0: return False
     else: return True
