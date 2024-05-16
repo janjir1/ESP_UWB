@@ -4,7 +4,7 @@ import time
 init_space_dimension = [2, 4, 2]
 particleSpace = space(10000, init_space_dimension)
 
-particleSpace.update_anchor("11a1", [1, 1, 1])
+particleSpace.update_anchor("11a1", [1.0, 1.0, 1.0])
 
 start_time = time.perf_counter()
 meassurment = 0.5
