@@ -197,7 +197,7 @@ def dist_to_anchor(anchor_position, position):
 
 @njit(float32(float32, float32, float32), cache=True)
 def normal_dist(mean, std_deviation, number):
-    exp = ((number - mean) / std_deviation) ** 2 / 2
+    exp = ((number - mean)**2) / (2*(std_deviation**2))
     return (1 / (std_deviation * (2 * pi) ** 0.5)) * euler ** (-exp)
 
 @njit(float64[:](float64, float64[:], float64[:]), cache=True)
