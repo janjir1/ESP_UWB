@@ -8,7 +8,7 @@ from numba import njit, float64, float32
 
 max_init_speed: tuple = (1, 1, 1)
 max_acceleration = np.array([10, 10, 10])
-to_keep = 0.01 # how many best particles are "elite"
+to_keep = 0.1 # how many best particles are "elite"
 
 
 class space:
@@ -20,6 +20,8 @@ class space:
         self.last_time = time.perf_counter()
         self.runVisualize = True
         self.init_space_dimension = init_space_dimension
+        self.last_tag = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        self.tag = np.empty((2, len(self.init_space_dimension)), dtype=np.float64)
 
     def _init_create_particles(self, space_dimension) -> None:
         
@@ -151,19 +153,24 @@ class space:
         for particle in self.sorted_particles:
             particle_positions[n] = particle.get_particle_position()
             particle_velocities[n] = particle.get_particle_velocity()
+            n+=1
         
-        average_particle_position = get_average(particle_positions)
-        average_particle_velocity = get_average(particle_velocities)
+        #average_particle_position = get_average(particle_positions)
+        #average_particle_velocity = get_average(particle_velocities)
 
+        """
         if self.last_tag not in vars():
             self.last_tag = np.array([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
             self.tag = np.empty((2, len(self.init_space_dimension)), dtype=np.float64)
+        """
         
         #TODO - average of self.last_tag[0] a average_particle_position
-        self.tag[0] = np.mean(np.vstack((self.last_tag[0], average_particle_position)), axis = 0)
-        self.tag[1] = np.mean(np.vstack((self.last_tag[1], average_particle_velocity)), axis = 0)
+        #self.tag[0] = np.mean(np.vstack((self.last_tag[0], average_particle_position)), axis = 0)
+        #self.tag[1] = np.mean(np.vstack((self.last_tag[1], average_particle_velocity)), axis = 0)
+        self.tag[0] = get_average(particle_positions)
+        self.tag[1] = get_average(particle_velocities)
 
-        self.last_tag = self.tag.copy()
+        #self.last_tag = self.tag.copy()
         self._log_tag()
 
     def _log_tag(self):
@@ -243,7 +250,7 @@ def dist_to_anchor(anchor_position, position):
 
 @njit(float32(float32, float32, float32), cache=True)
 def normal_dist(mean, std_deviation, number):
-    exp = ((number - mean)**2) / (2*(std_deviation**2))
+    exp = ((number - mean) / std_deviation) ** 2 / 2
     return (1 / (std_deviation * (2 * pi) ** 0.5)) * euler ** (-exp)
 
 @njit(float64[:](float64, float64[:], float64[:]), cache=True)
@@ -255,7 +262,7 @@ def daughter_particle_velocity(velocity_parent, timestep):
     random = np.random.random(3) -0.5
     return velocity_parent + ((random * max_acceleration * 2) * timestep)
 
-@njit(float64[:](float64[:]), cache = True)
+#@njit(float64[:](float64[:]), cache = True)
 def get_average(array):
     return np.mean(array, axis = 0)
     

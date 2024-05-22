@@ -5,7 +5,7 @@ from Functions import *
 from Anchor import Anchor
 from ParticleSpace import space
 
-calib_file_path = r"D:\Files\Projects\ESP_UWB\Python\DW1000_antenna_delay.csv"
+calib_file_path = r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv"
 
 anchors: Dict[str, Any] = dict()
 
@@ -48,13 +48,13 @@ def live(sock: socket) -> None:
     print(anchors_list)
     data_list = []
 
-    init_space_dimension = [4, 2, 3]
-    particleSpace = space(10000, init_space_dimension)
-    particleSpace.update_anchor("11a1", [2.0, 2.0, 1.0])
-    #particleSpace.update_anchor("12a2", [0.0, 1.5, 1.0])
-    #particleSpace.update_anchor("13a3", [3.0, 0.0, 1.0])
-    #particleSpace.update_anchor("14a4", [3.0, 1.5, 1.0])
-    #particleSpace.update_anchor("15a5", [2.0, 0.75, 3.0])
+    init_space_dimension = [6, 4, 2]
+    particleSpace = space(7500, init_space_dimension)
+    particleSpace.update_anchor("11a1", [0.0, 0.0, 0.51])
+    particleSpace.update_anchor("12a2", [4.6, 0.1, 0.23])
+    particleSpace.update_anchor("13a3", [5.14, 3.3, 0.5])
+    #particleSpace.update_anchor("14a4", [0.7, 3.34, 0.2])
+    #particleSpace.update_anchor("15a5", [2.83, 2.47, 1.39])
 
     sock.setblocking(0)
 
@@ -97,9 +97,12 @@ def live(sock: socket) -> None:
                         particleSpace.evolve_space()
                         print(f"evolve space {time.perf_counter() - time_start}")
 
+                        particleSpace.calculate_tag()
+
                         time_start = time.perf_counter()
                         particleSpace.visualize()
                         print(f"visualize {time.perf_counter() - time_start}")
+
                         #print(f"decode and calulation time {calculated_time-recive_time}, particle time {time.perf_counter() - calculated_time}, total {time.perf_counter()-recive_time}")
 
                 delta_time = time.perf_counter() - start_time

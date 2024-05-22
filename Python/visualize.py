@@ -59,9 +59,9 @@ def animate(i):
         ax.scatter(x_particles, y_particles, z_particles, marker="x", s = 1)
         ax.scatter(x_anchor, y_anchor, z_anchor)
         ax.scatter(x_tag, y_tag, z_tag)
-        ax.set_xlim(0, 4)
-        ax.set_ylim(0, 4)
-        ax.set_zlim(0, 4)
+        ax.set_xlim(0, 6)
+        ax.set_ylim(0, 6)
+        ax.set_zlim(0, 6)
 
         ax.autoscale(enable = False)
 
