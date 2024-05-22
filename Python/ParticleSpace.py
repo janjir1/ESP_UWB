@@ -13,12 +13,13 @@ to_keep = 0.01 # how many best particles are "elite"
 
 class space:
 
-    def __init__(self, num_particles: int, init_space_dimension: float):
+    def __init__(self, num_particles: int, init_space_dimension: list):
         self.num_particles = num_particles
         self._init_create_particles(init_space_dimension)
         self.anchors: list = []
         self.last_time = time.perf_counter()
         self.runVisualize = True
+        self.init_space_dimension = init_space_dimension
 
     def _init_create_particles(self, space_dimension) -> None:
         
@@ -58,7 +59,7 @@ class space:
 
         return True
 
-    def _get_timestep(self, time) -> float:
+    def _get_timestep(self, time):
         self.timestep = (time - self.last_time)
         self.last_time = time
 
@@ -72,7 +73,7 @@ class space:
 
         offsprings = int((1/to_keep)-1)
 
-        for particle in  self.sorted_particles:
+        for particle in self.sorted_particles:
             self._multipy_partcle(particle, offsprings)
 
 
@@ -86,9 +87,6 @@ class space:
             velocity = daughter_particle_velocity(velocity_parent, self.timestep)
             self.particles.append(particleClass(position, velocity))
 
-    def get_tag_position(self) -> list:
-        #averages top x% of pratricles, returns [position, velocity]
-        None
 
     def update_anchor(self, anchor_name: str, position: list) -> None:
 
@@ -122,6 +120,12 @@ class space:
             line.append("anchor")
             anchor_positionis.append(line)
 
+        tag_position = self.tag[0].tolist()
+        tag_position.append("tag_position")
+
+        tag_velocity = self.tag[1].tolist()
+        tag_velocity.append("tag_velocity")
+
         
 
         with open(namafile, 'w') as csv_file:
@@ -129,6 +133,8 @@ class space:
             csv_writer.writerow(fieldnames)
             csv_writer.writerows(particle_positions)
             csv_writer.writerows(anchor_positionis)
+            csv_writer.writerow(tag_position)
+            csv_writer.writerow(tag_velocity)
 
 
     def average_fit(self) -> float:
@@ -137,7 +143,47 @@ class space:
             average_fit = average_fit + particle.get_fit()
 
         return average_fit/len(self.particles)
+    
+    def calculate_tag(self) -> None:
+        particle_positions = np.empty((len(self.sorted_particles), len(self.init_space_dimension)), dtype=np.float64)
+        particle_velocities = np.empty((len(self.sorted_particles), len(self.init_space_dimension)), dtype=np.float64)
+        n=0
+        for particle in self.sorted_particles:
+            particle_positions[n] = particle.get_particle_position()
+            particle_velocities[n] = particle.get_particle_velocity()
+        
+        average_particle_position = get_average(particle_positions)
+        average_particle_velocity = get_average(particle_velocities)
 
+        if self.last_tag not in vars():
+            self.last_tag = np.array([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
+            self.tag = np.empty((2, len(self.init_space_dimension)), dtype=np.float64)
+        
+        #TODO - average of self.last_tag[0] a average_particle_position
+        self.tag[0] = np.mean(np.vstack((self.last_tag[0], average_particle_position)), axis = 0)
+        self.tag[1] = np.mean(np.vstack((self.last_tag[1], average_particle_velocity)), axis = 0)
+
+        self.last_tag = self.tag.copy()
+        self._log_tag()
+
+    def _log_tag(self):
+
+        namafile = 'tag_log.csv'
+
+        fieldnames = ["x_coord", "y_coord", "z_coord", "x_speed", "y_speed", "z_speed"]
+
+        line = self.tag[0].tolist()
+        line.append(self.tag[1].tolist())
+
+        if os.path.exists(namafile):
+            with open(namafile, 'a') as csv_file:
+                csv_writer = csv.writer(csv_file)
+                csv_writer.writerow(line)
+        else:
+            with open(namafile, 'w') as csv_file:
+                csv_writer = csv.writer(csv_file)
+                csv_writer.writerow(fieldnames)
+                csv_writer.writerow(line)
 
 
 class particleClass:
@@ -208,4 +254,8 @@ def update_particle(timestep, position, velocity):
 def daughter_particle_velocity(velocity_parent, timestep):
     random = np.random.random(3) -0.5
     return velocity_parent + ((random * max_acceleration * 2) * timestep)
+
+@njit(float64[:](float64[:]), cache = True)
+def get_average(array):
+    return np.mean(array, axis = 0)
     

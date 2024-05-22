@@ -35,6 +35,9 @@ def animate(i):
         x_anchor = []
         y_anchor = []
         z_anchor = []
+        x_tag = []
+        y_tag = []
+        z_tag = []
 
         for row in csv_reader:
             if len(row)==4 and row[3]== "particle":
@@ -45,12 +48,17 @@ def animate(i):
                 x_anchor.append(float(row[0]))
                 y_anchor.append(float(row[1]))
                 z_anchor.append(float(row[2]))
+            elif len(row)==4 and row[3]== "tag_position":
+                x_tag.append(float(row[0]))
+                y_tag.append(float(row[1]))
+                z_tag.append(float(row[2]))
 
 
         plt.cla()
 
         ax.scatter(x_particles, y_particles, z_particles, marker="x", s = 1)
         ax.scatter(x_anchor, y_anchor, z_anchor)
+        ax.scatter(x_tag, y_tag, z_tag)
         ax.set_xlim(0, 4)
         ax.set_ylim(0, 4)
         ax.set_zlim(0, 4)
