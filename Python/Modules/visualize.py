@@ -16,7 +16,7 @@ ax.set_zlabel('Z')
 
 
 
-namafile = 'visualize.csv'
+namafile = r'Modules/visualize.csv'
 header1 = "x_coord"
 header2 = "y_coord"
 header3 = "z_coord"

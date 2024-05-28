@@ -298,7 +298,3 @@ class ToAnchorRange:
             self.rPOLL_ACK = self.rPOLL_ACK - our_delay
 
             self.antenna_calibrated = True
-
-if __name__ == "__main__":
-    from Main import *
-    main()

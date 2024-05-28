@@ -3,7 +3,7 @@ import numpy as np
 from dataclasses import dataclass
 import os, csv
 import time
-from Functions import *
+from Modules.Functions import *
 from numba import njit, float64, float32
 
 max_init_speed: tuple = (1, 1, 1)
@@ -104,9 +104,9 @@ class space:
 
         if self.runVisualize:
             self.runVisualize = False
-            os.system("start python visualize.py")
+            os.system("start python Modules/visualize.py")
 
-        namafile = 'visualize.csv'
+        namafile = r'Modules/visualize.csv'
         fieldnames = ["x_coord", "y_coord", "z_coord", "type"]
 
         particle_positions = []

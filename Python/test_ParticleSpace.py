@@ -1,4 +1,4 @@
-from ParticleSpace import space
+from Modules.ParticleSpace import space
 import time
 
 init_space_dimension = [2, 4, 2]
