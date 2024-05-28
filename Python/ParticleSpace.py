@@ -155,18 +155,6 @@ class space:
             particle_velocities[n] = particle.get_particle_velocity()
             n+=1
         
-        #average_particle_position = get_average(particle_positions)
-        #average_particle_velocity = get_average(particle_velocities)
-
-        """
-        if self.last_tag not in vars():
-            self.last_tag = np.array([0.0, 0.0, 0.0], [0.0, 0.0, 0.0])
-            self.tag = np.empty((2, len(self.init_space_dimension)), dtype=np.float64)
-        """
-        
-        #TODO - average of self.last_tag[0] a average_particle_position
-        #self.tag[0] = np.mean(np.vstack((self.last_tag[0], average_particle_position)), axis = 0)
-        #self.tag[1] = np.mean(np.vstack((self.last_tag[1], average_particle_velocity)), axis = 0)
         self.tag[0] = get_average(particle_positions)
         self.tag[1] = get_average(particle_velocities)
 

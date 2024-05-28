@@ -1,5 +1,0 @@
-TODO:
-
-Redo meassurment
-send timestep from main not current time
-2500 particles as per first particle space CPU only

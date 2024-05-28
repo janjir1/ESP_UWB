@@ -48,8 +48,11 @@ def live(sock: socket) -> None:
     print(anchors_list)
     data_list = []
 
+    #initial space dimension
     init_space_dimension = [6, 4, 2]
     particleSpace = space(7500, init_space_dimension)
+
+    #location of anchors, if location is not provided filter ignores that anchor
     particleSpace.update_anchor("11a1", [0.0, 0.0, 0.51])
     particleSpace.update_anchor("12a2", [4.6, 0.1, 0.23])
     particleSpace.update_anchor("13a3", [5.14, 3.3, 0.5])
@@ -61,6 +64,8 @@ def live(sock: socket) -> None:
     while True:
 
         while True:
+
+            #reads last couple of messages
             try:
                 sock_data, addr = sock.recvfrom(1024)
 
@@ -80,15 +85,19 @@ def live(sock: socket) -> None:
                 recived_data = packet[0]
                 recive_time = packet[1] + delta_time
 
+                #anchor.py decodimg and calculation
                 name = decode(recived_data)
                 calculate(name, r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python\DW1000_antenna_delay.csv")
-                calculated_time = time.perf_counter()
+
+                #calculated_time = time.perf_counter()
 
                 print(f"{name} : {anchors[name].get_distance()[0] * 100:.2f} cm, RXPower: {anchors[name].get_distance()[1]}")
                 distance = anchors[name].get_distance()[0]
 
                 if bs_filter(distance):
                     time_start = time.perf_counter()
+
+                    #particle space iteration
                     if particleSpace.update_space(name, anchors[name].get_distance()[0], recive_time):
                         #print(f"average fit = {particleSpace.average_fit():.2f}")
                         print(f"update space {time.perf_counter() - time_start}")
@@ -110,7 +119,7 @@ def live(sock: socket) -> None:
 
 
 def record(sock: socket) -> None:
-
+    #used for antenna delay calibration
     
     path = r"C:\Users\Janjiri\Desktop\Soubory\ESP_UWB\Python"
 
@@ -157,4 +166,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

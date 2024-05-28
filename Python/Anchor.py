@@ -23,25 +23,6 @@ class Anchor:
         return self.our_name
     
     def decode_data(self, recived_data: bytes, starting_position: int):
-        """
-        Decodes received data from Ultra-Wideband (UWB) devices using decoding keys.
-
-        This method is responsible for decoding data received from UWB devices,
-        including both tag and anchor data.
-        
-        Tag data are stored in a list called 'to_tag'
-        within the ToTagRange class, with index 0 representing the newest data.
-
-        Anchor data are stored in a dictionary called 'to_anchor', where each key is
-        the name of the anchor, and the corresponding value is a list of measurements.
-
-        Args:
-            received_data (bytes): The byte data received from UWB devices.
-            starting_position (int): The starting position in the byte data from where decoding begins.
-
-        Returns:
-            None
-        """
 
         byte_position = starting_position
         message_num = decode_bytes_to_dec(recived_data, byte_position, 2)
@@ -70,21 +51,7 @@ class Anchor:
                 byte_position = byte_position + (get_decode_key_len(self._get_anchor_decode_key()))
 
     def _decode_tag_data(self, recived_data: bytes, starting_position: int, message_num: int) -> None:
-        """
-         Decodes tag data from received message using predefined decoding keys.
 
-        Args:
-            received_data (bytes): The byte data received in the message.
-            starting_position (int): The starting position in the byte data from where decoding begins.
-            message_num (int): The identifier for the message being decoded.
-
-        Returns:
-            None
-
-        This method decodes the received byte data into structured tag data using decoding keys.
-        Decoding involves parsing the byte data based on predetermined structures and adding
-        the decoded information into the system.
-        """
         decode_key_top = self._get_tag_decode_key_top()
         
         decode_position: int = 0
@@ -120,21 +87,7 @@ class Anchor:
         self._add_decoded_tag_data(data["POLL"], data["POLL_ACK"], data["RANGE"], message_num)
 
     def _decode_anchor_data(self, recived_data: bytes, starting_position: int, anchor_name: str) -> None:
-        """
-         Decodes anchor data from received message using predefined decoding keys.
 
-        Args:
-            received_data (bytes): The byte data received in the message.
-            starting_position (int): The starting position in the byte data from where decoding begins.
-            message_num (int): The identifier for the message being decoded.
-
-        Returns:
-            None
-
-        This method decodes the received byte data into structured tag data using decoding keys.
-        Decoding involves parsing the byte data based on predetermined structures and adding
-        the decoded information into the system.
-        """
         decode_key = self._get_anchor_decode_key()
         
         decode_position: int = 0
@@ -160,23 +113,6 @@ class Anchor:
         return -(power/100)
 
     def _add_decoded_tag_data(self, POLL: dict, POLL_ACK: dict, RANGE: dict, message_num: int) -> None:
-        """
-        Adds decoded tag data to the internal storage, maintaining a fixed number of latest measurements.
-
-        This method adds the decoded tag data, including POLL, POLL_ACK, and RANGE, to the internal storage
-        of the decoder. It inserts the data into a list named 'to_tag' within the ToTagRange class, ensuring
-        that the list contains the most recent measurements. If the number of measurements exceeds the maximum
-        allowed, the oldest measurement is removed.
-
-        Args:
-            POLL (dict): Dictionary containing decoded POLL data.
-            POLL_ACK (dict): Dictionary containing decoded POLL_ACK data.
-            RANGE (dict): Dictionary containing decoded RANGE data.
-            message_num (int): The message number associated with the decoded data.
-
-        Returns:
-            None
-        """
         
         # Check if the current message number is sequential to the previous one
         is_sequential = False
@@ -191,23 +127,7 @@ class Anchor:
             del self.to_tag[-1]
 
     def _add_decoded_anchor_data(self, anchor_name: str, rPOLL_ACK: int, RXPower: int, FPPower: int) -> None:
-        """
-        Adds decoded anchor data to the internal storage, maintaining a fixed number of latest measurements.
 
-        This method adds the decoded anchor data, including rPOLL_ACK, RXPower, and FPPower, to the internal storage
-        of the decoder. It inserts the data into a list associated with the given anchor name within the 'to_anchor'
-        dictionary. The method ensures that the list contains the most recent measurements. If the number of measurements
-        exceeds the maximum allowed, the oldest measurement is removed.
-
-        Args:
-            anchor_name (str): The name of the anchor associated with the decoded data.
-            rPOLL_ACK (int): The decoded rPOLL_ACK data.
-            RXPower (int): The decoded RXPower data.
-            FPPower (int): The decoded FPPower data.
-
-        Returns:
-            None
-        """
        # Extract sPOLL and rPOLL from the most recent tag data
         sPOLL, rPOLL = self.to_tag[0].get_anchor_range_data()
 
@@ -236,30 +156,10 @@ class Anchor:
                 2: {"bytes" : 2, "content" : "FPPower"}}   
 
     def apply_antenna_calibration(self, delay_file_path: str, position: int = 0) -> None:
-        """
-        Applies antenna delay calibration to tag and anchor data.
-
-        If the delay calibration for a specific entity (e.g., tag, anchor) is not available,
-        it applies the default antenna delay calibration.
-
-        Args:
-            delay_file_path (str): The file path to the CSV file containing delay calibration data.
-            position (int): at which saved meassurment to apply, 0 (latest) as default
-        """
-        
 
         self.to_tag[position].set_antenna_delay(self.calib_data)
 
     def _read_calibration(self, delay_file_path: str) -> None:
-        """
-        Reads delay calibration data from a CSV file.
-
-        The CSV file is expected to have three columns: the first column containing key values
-        and the second and third column containing corresponding delay values.
-
-        Args:
-            delay_file_path (str): The file path to the CSV file containing delay calibration data.
-        """
 
         if os.path.exists(delay_file_path):
             with open(delay_file_path, 'r', encoding='utf-8-sig') as file:
